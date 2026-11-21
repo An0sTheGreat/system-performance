@@ -36,5 +36,5 @@ export function render(el, ctx) {
       row({ title: 'Memory', trailing: info.memTotal ? bytes(info.memTotal) : '—' }),
       row({ title: 'Graphics', trailing: info.gpuName ?? 'None found' }),
     ], 'Read from Windows performance counters, DXGI and the Native Wifi API. Nothing leaves this PC.')),
-    section(...list('About', [row({ title: 'System Performance', trailing: 'Version 1.2.0' })])));
+    section(...list('About', [row({ title: 'System Performance', trailing: 'Version 1.3.0' })])));
 }
