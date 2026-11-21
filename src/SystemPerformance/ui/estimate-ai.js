@@ -36,6 +36,7 @@ export function readConfig(json) {
   const layers = c?.num_hidden_layers, heads = c?.num_attention_heads, hidden = c?.hidden_size;
   if (!(layers > 0 && heads > 0)) return null;
   const headDim = c.head_dim ?? hidden / heads;
+  if (!(Number.isFinite(headDim) && headDim > 0 && (c.num_key_value_heads ?? heads) > 0)) return null;
   const experts = c.num_local_experts ?? c.num_experts, k = c.num_experts_per_tok;
   let activeParams = null;
   if (experts > 0 && k > 0 && hidden > 0) {
@@ -54,7 +55,8 @@ export function kvBytes(cfg, ctx, params) {
 
 export function ramBandwidth(modules) {
   const channels = Math.max(1, Math.min(modules.length, 2));
-  const mts = modules[0]?.configuredMts ?? modules[0]?.ratedMts ?? 3200;
+  // WMI reports 0 for an unknown clock
+  const mts = modules[0]?.configuredMts || modules[0]?.ratedMts || 3200;
   return channels * mts * 8 / 1000;
 }
 

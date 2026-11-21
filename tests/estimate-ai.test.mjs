@@ -45,3 +45,9 @@ test('moe active params from config', () => {
   assert.ok(c.activeParams > 0);
   assert.equal(readConfig({ num_hidden_layers: 8, num_attention_heads: 8, hidden_size: 256 }).activeParams, null);
 });
+test('config without head size is unusable, not NaN', () => {
+  assert.equal(readConfig({ num_hidden_layers: 32, num_attention_heads: 32 }), null);
+});
+test('ram bandwidth treats a 0 clock as missing', () => {
+  assert.equal(ramBandwidth([{ configuredMts: 0, ratedMts: 6000 }, { configuredMts: 0, ratedMts: 6000 }]), 96);
+});
