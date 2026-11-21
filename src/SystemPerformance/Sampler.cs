@@ -29,6 +29,8 @@ sealed class Sampler : IDisposable
 
     // Per-process sampling runs only while the page shows the Top apps sheet, once a second.
     readonly ProcessSampler processes = new();
+    readonly Sensors sensors;
+    public bool WatchSensors { set => sensors.WatchAll = value; }
     readonly Dictionary<int, double> gpuByPid = [];
     volatile bool watch;
     long nextProcs;
@@ -57,6 +59,7 @@ sealed class Sampler : IDisposable
         gpuDedicated = pdh.Add(@"\GPU Adapter Memory(*)\Dedicated Usage");
         gpuShared = pdh.Add(@"\GPU Adapter Memory(*)\Shared Usage");
         pdh.Collect();   // rate counters need a previous sample
+        sensors = new Sensors(gpu?.Name);
     }
 
     public string InfoJson()
@@ -79,7 +82,9 @@ sealed class Sampler : IDisposable
         lastGpu = null; lastRx = lastTx = null;
         var gpuSample = GpuSample();
         var netSample = Net(now);
-        Latest = new Overlay.Reading(cpu, lastGpu, mem.Total > 0 ? (mem.Total - mem.Available) * 100.0 / mem.Total : 0, lastRx, lastTx);
+        sensors.Want();
+        var sensed = sensors.Latest;
+        Latest = new Overlay.Reading(cpu, lastGpu, mem.Total > 0 ? (mem.Total - mem.Available) * 100.0 / mem.Total : 0, lastRx, lastTx, sensed.CpuTemp, sensed.GpuTemp);
         return JsonSerializer.Serialize(new
         {
             type = "metrics",
@@ -99,6 +104,8 @@ sealed class Sampler : IDisposable
                 net = netSample,
                 gpu = gpuSample,
                 procs = ProcSample(now),   // after GpuSample: it fills gpuByPid
+                sensors = sensed,
+                sensorList = sensors.TakeList(),
             },
         }, Json);
     }
@@ -232,7 +239,7 @@ sealed class Sampler : IDisposable
     static string CpuName() =>
         (Registry.GetValue(@"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString", null) as string)?.Trim() ?? "Processor";
 
-    public void Dispose() { pdh.Dispose(); processes.Dispose(); }
+    public void Dispose() { pdh.Dispose(); processes.Dispose(); sensors.Dispose(); }
 }
 
 // Minimal PDH wrapper: English counter paths (work on any display language), doubles, wildcard arrays.

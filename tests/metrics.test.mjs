@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bytes, bits, pct, pctFine, topApps, uptime, diskLabel, Series, linePath, areaPath, niceMax, parseSettings, capacity } from '../src/SystemPerformance/ui/metrics.js';
+import { sensorValue, duration, heat, bytes, bits, pct, pctFine, topApps, uptime, diskLabel, Series, linePath, areaPath, niceMax, parseSettings, capacity } from '../src/SystemPerformance/ui/metrics.js';
 
 test('formatting', () => {
   assert.equal(bytes(0), '0 B');
@@ -50,4 +50,16 @@ test('top apps sort by the chosen resource, ties by name', () => {
   assert.deepEqual(topApps(null, 'cpu'), []);
   assert.equal(pctFine(0.44), '0.4%');
   assert.equal(pctFine(42.6), '43%');
+});
+
+test('sensor values carry their unit; heat joins what is readable', () => {
+  assert.equal(sensorValue('Temperature', 54.26), '54.3 °C');
+  assert.equal(sensorValue('Power', 14.46), '14.5 W');
+  assert.equal(sensorValue('Voltage', 0.8), '0.800 V');
+  assert.equal(sensorValue('Fan', null), '—');
+  assert.equal(duration(9420), '2:37:00');
+  assert.equal(duration(600), '10 min');
+  assert.equal(heat(54.4, 65.2), '54 °C · 65 W');
+  assert.equal(heat(null, 65), '65 W');
+  assert.equal(heat(null, null), '');
 });

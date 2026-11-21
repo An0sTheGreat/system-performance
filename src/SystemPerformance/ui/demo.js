@@ -11,6 +11,9 @@ let apps = [
   ['node', 3, 2.2, 310], ['obs64', 1, 4, 420], ['Photoshop', 1, 0.2, 1500], ['msedge', 6, 0.5, 450], ['python', 2, 0.7, 120],
 ].map(([name, count, cpu, mem]) => ({ name, count, cpu, mem: mem * MB, io: 0, gpu: 0 }));
 export const demoWatch = on => { watching = on; nextProcs = 0; };
+let sensorsOn = false;
+export const demoSensors = on => { sensorsOn = on; };
+const sensor = (name, type, value, min, max) => ({ name, type, value, min: min ?? value, max: max ?? value });
 export function demoEnd(name) {
   if (name === 'svchost') return { ok: false, ended: 0, failed: 0, error: "svchost is part of Windows or this app and can't be ended here." };
   const n = apps.find(a => a.name === name)?.count ?? 0;
@@ -39,7 +42,23 @@ export function demoSample(interval) {
     apps = apps.map(a => ({ ...a, cpu: walk(a.cpu, 2, 0, 40), io: walk(a.io, 4e6, 0, 5e7), gpu: a.name === 'obs64' || a.name === 'chrome' ? walk(a.gpu, 8, 0, 60) : 0 }));
     procs = apps;
   }
+  const cpuTemp = 38 + cpu * 0.5, gpuTemp = 34 + gpu * 0.45;
+  const sensors = {
+    ready: t > 1500, admin: false, pawnIO: false, error: null, cpuTemp: null, cpuPower: null,
+    gpuTemp, gpuHotSpot: gpuTemp + 9, gpuPower: 18 + gpu * 2.4, gpuFanRpm: 600 + gpu * 14, gpuFanPercent: 30 + gpu / 3, gpuClock: 600 + gpu * 22, gpuMemoryClock: 810,
+    battery: { level: 76, pluggedIn: false, charging: false, watts: 11.4, remainingSeconds: 9420 },
+  };
+  const sensorList = sensorsOn && t % 1000 < interval ? [
+    { name: 'Preview GPU (simulated)', type: 'GpuNvidia', sensors: [
+      sensor('GPU Core', 'Temperature', gpuTemp, 30, 71), sensor('GPU Hot Spot', 'Temperature', gpuTemp + 9, 38, 80), sensor('GPU Memory Junction', 'Temperature', 48, 40, 62),
+      sensor('GPU Package', 'Power', sensors.gpuPower, 14, 260), sensor('GPU Core', 'Clock', sensors.gpuClock, 590, 2800), sensor('GPU Memory', 'Clock', 810, 810, 15000),
+      sensor('GPU Fan 1', 'Fan', sensors.gpuFanRpm, 0, 2100), sensor('GPU Fan 1', 'Control', sensors.gpuFanPercent, 30, 70), sensor('GPU Core Voltage', 'Voltage', 0.81, 0.8, 1.05)] },
+    { name: 'Preview battery (simulated)', type: 'Battery', sensors: [
+      sensor('Charge Level', 'Level', 76, 74, 100), sensor('Discharge Rate', 'Power', 11.4, 6, 24), sensor('Degradation Level', 'Level', 8.2), sensor('Voltage', 'Voltage', 12.1, 11.9, 12.6)] },
+  ] : null;
   return {
+    sensors,
+    sensorList,
     procs,
     cpu: { total: cpu, cores, mhz: 3200 + cpu * 12, processes: 312, threads: 4180, uptime: 3_600_000 * 27 + t },
     mem: { total: 32 * GB, used: mem * 32 * GB, commit: mem * 36 * GB, commitLimit: 50 * GB },

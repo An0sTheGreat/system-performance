@@ -7,9 +7,15 @@ Updates every 1000, 500 or 100 ms (top-right switch, or Settings). Closing the w
 
 **Mini overlay:** a small always-on-top strip with CPU, GPU, RAM and network that stays up while the main window is closed, so you can watch it over a game or full-screen app. Turn it on with the *Overlay* button on the dashboard, in Settings, or from the tray icon's menu. Unlock it to drag it into place; lock it (the default) so clicks pass through to whatever is underneath. It shows over borderless and windowed games, but not exclusive full-screen ones. The tray icon can also show live CPU % (on by default; tooltip shows CPU, RAM and GPU).
 
+**Sensors:** temperatures, power draw, clocks, fan speeds and voltages from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). The CPU and GPU cards show temperature and watts, the overlay adds temperatures, and the *Sensors* screen lists every readable sensor per piece of hardware with its min and max since start. On laptops, battery charge, power draw and time left appear in the top bar and on the Sensors screen.
+What you get depends on rights and drivers:
+- **As a normal user:** GPU (NVIDIA, AMD, Intel) temperatures, power, clocks and fans, and battery.
+- **As administrator** (*Restart as administrator* on the Sensors screen): drive temperatures too.
+- **With the free [PawnIO](https://pawnio.eu/) driver and administrator rights:** CPU temperature and power, and motherboard fans and voltages. Windows only lets a signed driver read these. This app doesn't install PawnIO; get it from pawnio.eu or with `winget install namazso.PawnIO`. Some games' anti-cheat software objects to hardware-access drivers like this one.
+
 - **Download:** the latest standalone `SystemPerformance.exe` is on the [Releases page](https://github.com/An0sTheGreat/system-performance/releases). .NET is bundled; it needs the WebView2 Runtime, which Windows 11 already has.
 - **Build:** `./build.ps1` (needs the .NET 10 Desktop Runtime to run) or `./build.ps1 -Standalone` (bundles .NET). Needs the .NET 10 SDK; Node runs the UI tests.
-- **Check the counters on a PC:** `dist\SystemPerformance.exe --sample | Out-String` prints the hardware info, one sample and the five busiest programs.
+- **Check the counters on a PC:** `dist\SystemPerformance.exe --sample | Out-String` prints the hardware info, one sample and the five busiest programs; `--sensors` prints the sensor summary and every readable sensor (takes about 15 s).
 - **Preview the UI in a browser:** serve `src/SystemPerformance/ui` (e.g. `python -m http.server -d src/SystemPerformance/ui`); a simulated machine stands in for the host.
 
 Data sources: Windows performance counters (PDH) for CPU, disks and GPU engines; GlobalMemoryStatusEx; DXGI for the GPU name and memory;
@@ -19,8 +25,7 @@ Design system copied from Tokenscope (`ui/design/tokens.css`, `components.css`);
 
 ## Future Plans
 
-1. **Temperatures, clocks, fans, power and battery.** CPU and GPU temperature and power draw in watts, fan speeds, and on laptops the battery drain rate and time left. Needs a sensor library such as LibreHardwareMonitor; some readings need administrator rights. *For gamers, overclockers and laptop users.*
-2. **History and session recording.** Hours or days of history instead of the last 60 seconds, a timeline to scroll back through, and a "record" button for a game, render or build that produces a summary (average, peak, time throttled) and a CSV export. *For developers, benchmarking, and "it was slow at 3 pm" problems.*
-3. **Alerts.** Rules such as "GPU above 85 °C for 30 seconds", "less than 10% memory free" or "C: over 95% full" that raise a Windows notification, plus an option to start with Windows so it keeps watching. *For home-server owners, IT staff, and long unattended jobs.*
-4. **Per-app network use.** A Network column in Top apps showing which programs are sending and receiving. Windows has no cheap counter for this, so it needs an ETW (Event Tracing for Windows) session, as Resource Monitor uses.
-5. **Overlay hotkey and layout.** A global shortcut (such as Ctrl+Shift+O) to show or hide the overlay mid-game, a choice of which metrics it shows, and a vertical layout.
+1. **History and session recording.** Hours or days of history instead of the last 60 seconds, a timeline to scroll back through, and a "record" button for a game, render or build that produces a summary (average, peak, time throttled) and a CSV export. *For developers, benchmarking, and "it was slow at 3 pm" problems.*
+2. **Alerts.** Rules such as "GPU above 85 °C for 30 seconds", "less than 10% memory free" or "C: over 95% full" that raise a Windows notification, plus an option to start with Windows so it keeps watching. *For home-server owners, IT staff, and long unattended jobs.*
+3. **Per-app network use.** A Network column in Top apps showing which programs are sending and receiving. Windows has no cheap counter for this, so it needs an ETW (Event Tracing for Windows) session, as Resource Monitor uses.
+4. **Overlay hotkey and layout.** A global shortcut (such as Ctrl+Shift+O) to show or hide the overlay mid-game, a choice of which metrics it shows, and a vertical layout.

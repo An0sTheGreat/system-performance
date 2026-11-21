@@ -1,6 +1,6 @@
 // Host messaging. Views never import this; app.js does.
 // In a plain browser (design preview) a simulated machine stands in for the host.
-import { demoInfo, demoSample, demoWatch, demoEnd } from './demo.js';
+import { demoInfo, demoSample, demoWatch, demoEnd, demoSensors } from './demo.js';
 
 const webview = globalThis.chrome?.webview;
 export const hosted = !!webview;
@@ -57,3 +57,11 @@ export function setOverlay(patch) {
   demoOverlay = { ...demoOverlay, ...patch };
   onOverlay?.({ ...demoOverlay });
 }
+
+// The full sensor list rides along in samples (s.sensorList, once a second) only while watching.
+export function setSensors(on) { if (hosted) request('sensors', { on }); else demoSensors(on); }
+
+// Restarts the app as administrator (Windows asks first). Resolves false if the user said no.
+export async function elevate() { return hosted ? !!(await request('elevate', {})).ok : false; }
+
+export function openExternal(url) { if (hosted) request('openExternal', { url }); else globalThis.open(url, '_blank', 'noopener'); }

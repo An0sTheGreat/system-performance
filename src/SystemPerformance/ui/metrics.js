@@ -94,3 +94,45 @@ export function parseSettings(raw) {
 export function topApps(apps, key, n = 15) {
   return [...(apps ?? [])].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0) || a.name.localeCompare(b.name)).slice(0, n);
 }
+
+// ---- hardware sensors (LibreHardwareMonitor sensor types) ----
+
+export const SENSOR_ORDER = ['Temperature', 'Power', 'Clock', 'Fan', 'Control', 'Load', 'Voltage', 'Current', 'Energy',
+  'Level', 'TimeSpan', 'Data', 'SmallData', 'Throughput', 'Frequency', 'Flow', 'Factor', 'Noise', 'Humidity', 'Conductivity'];
+
+const KINDS = { Temperature: 'Temperatures', Power: 'Power', Clock: 'Clocks', Fan: 'Fans', Control: 'Fan and pump control', Load: 'Load',
+  Voltage: 'Voltages', Current: 'Currents', Energy: 'Energy', Level: 'Levels', TimeSpan: 'Time', Data: 'Data', SmallData: 'Data',
+  Throughput: 'Throughput', Frequency: 'Frequencies', Flow: 'Flow', Factor: 'Factors', Noise: 'Noise', Humidity: 'Humidity', Conductivity: 'Conductivity' };
+export const sensorKind = type => KINDS[type] ?? type;
+
+// "1:05:09", or "12 min" under an hour.
+export function duration(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min`;
+  return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export function sensorValue(type, v) {
+  if (v == null || !Number.isFinite(v)) return '—';
+  switch (type) {
+    case 'Temperature': return `${v.toFixed(1)} °C`;
+    case 'Power': return `${v.toFixed(1)} W`;
+    case 'Clock': return `${Math.round(v).toLocaleString()} MHz`;
+    case 'Fan': return `${Math.round(v).toLocaleString()} RPM`;
+    case 'Control': case 'Load': case 'Level': case 'Humidity': return `${v.toFixed(1)}%`;
+    case 'Voltage': return `${v.toFixed(3)} V`;
+    case 'Current': return `${v.toFixed(2)} A`;
+    case 'Energy': return `${Math.round(v).toLocaleString()} mWh`;
+    case 'Data': return `${v.toFixed(1)} GB`;
+    case 'SmallData': return `${Math.round(v).toLocaleString()} MB`;
+    case 'Throughput': return perSec(v);
+    case 'TimeSpan': return duration(v);
+    case 'Frequency': return `${v.toFixed(1)} Hz`;
+    case 'Flow': return `${v.toFixed(1)} L/h`;
+    case 'Noise': return `${v.toFixed(1)} dBA`;
+    default: return v.toFixed(2);
+  }
+}
+
+// "54 °C · 65 W" from whichever of temperature and power the sensors could read; '' when neither.
+export const heat = (temp, watts) => [temp != null && `${Math.round(temp)} °C`, watts != null && `${Math.round(watts)} W`].filter(Boolean).join(' · ');

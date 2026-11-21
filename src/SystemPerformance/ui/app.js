@@ -3,10 +3,11 @@ import { h, transition, closeSheet } from './dom.js';
 import * as bridge from './bridge.js';
 import { Series, capacity, parseSettings } from './metrics.js';
 import * as dashboard from './views/dashboard.js';
+import * as sensorsView from './views/sensors.js';
 import * as settingsView from './views/settings.js';
 import { updateTop } from './views/top.js';
 
-const VIEWS = [dashboard, settingsView];
+const VIEWS = [dashboard, sensorsView, settingsView];
 const KEY = 'sysperf.settings.v1';
 
 // localStorage is a convenience only: reads and writes may fail and the app must still work.
@@ -18,15 +19,17 @@ const history = Object.fromEntries(['cpu', 'gpu', 'mem', 'disk', 'rx', 'tx'].map
 let info = {};
 let overlay = { show: false, locked: true, trayCpu: true };
 let sample = null;
+let sensorList = null;   // full sensor list, while the Sensors screen asks for it
 let viewRoot = null;
 const $ = id => document.getElementById(id);
 const knownView = id => (VIEWS.some(v => v.id === id) ? id : null);
 let viewId = knownView(location.hash.slice(1)) ?? 'dashboard';
 const currentView = () => VIEWS.find(v => v.id === viewId) ?? VIEWS[0];
-const ctx = (animate = false) => ({ info, sample, history, settings, overlay, animate, actions });
+const ctx = (animate = false) => ({ info, sample, sensorList, history, settings, overlay, animate, actions });
 
 function onSample(s) {
   sample = s;
+  if (s.sensorList) sensorList = s.sensorList;
   history.cpu.push(s.cpu.total);
   history.gpu.push(s.gpu?.util ?? 0);
   history.mem.push(s.mem.total ? (s.mem.used / s.mem.total) * 100 : 0);
@@ -42,6 +45,9 @@ const actions = {
   watchProcesses: on => bridge.setProcesses(on),
   endTask: name => bridge.endTask(name),
   setOverlay: patch => bridge.setOverlay(patch),
+  watchSensors: on => bridge.setSensors(on),
+  elevate: () => bridge.elevate(),
+  openExternal: url => bridge.openExternal(url),
   setSetting(key, value) {
     if (settings[key] === value) return;
     settings[key] = value;
@@ -87,6 +93,7 @@ function render(animate) {
 function go(id) {
   if (!knownView(id)) return;
   transition(() => {
+    currentView().leave?.(ctx());
     viewId = id;
     closeSheet();
     syncNav();

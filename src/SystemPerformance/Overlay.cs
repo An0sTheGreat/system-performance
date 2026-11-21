@@ -10,7 +10,7 @@ namespace SystemPerformance;
 // Locked = clicks pass through to whatever is beneath; unlocked = drag it anywhere.
 sealed class Overlay : Form
 {
-    public readonly record struct Reading(double Cpu, double? Gpu, double Mem, double? Rx, double? Tx);
+    public readonly record struct Reading(double Cpu, double? Gpu, double Mem, double? Rx, double? Tx, double? CpuTemp = null, double? GpuTemp = null);
 
     // Raw colours live here, like MainForm.ApplyTheme: the overlay is native, outside the CSS tokens.
     static readonly Color Back = Color.FromArgb(214, 20, 20, 22);
@@ -95,8 +95,13 @@ sealed class Overlay : Form
     {
         if (!IsHandleCreated || !Visible) return;
         float s = DeviceDpi / 96f;
-        var items = new List<(string Label, string Value, string Widest, bool Hot)> { ("CPU", Pct(last.Cpu), "100%", last.Cpu >= 90) };
-        if (last.Gpu is double g) items.Add(("GPU", Pct(g), "100%", g >= 90));
+        // A temperature, when the sensor is readable, rides after the load: "CPU 23%  54°". Hot at 90 °C.
+        static string WithTemp(string pct, double? t) => t is double c ? $"{pct}  {Math.Round(c)}°" : pct;
+        var items = new List<(string Label, string Value, string Widest, bool Hot)>
+        {
+            ("CPU", WithTemp(Pct(last.Cpu), last.CpuTemp), last.CpuTemp is null ? "100%" : "100%  100°", last.Cpu >= 90 || last.CpuTemp >= 90),
+        };
+        if (last.Gpu is double g) items.Add(("GPU", WithTemp(Pct(g), last.GpuTemp), last.GpuTemp is null ? "100%" : "100%  100°", g >= 90 || last.GpuTemp >= 90));
         items.Add(("RAM", Pct(last.Mem), "100%", last.Mem >= 90));
         if (last.Rx is double rx) items.Add(("NET", $"↓ {Bits(rx)}   ↑ {Bits(last.Tx ?? 0)}", "↓ 888.8 Mbps   ↑ 888.8 Mbps", false));
 

@@ -2,9 +2,9 @@
 // sample and only writes changed text nodes, two path attributes per chart and the core bars.
 
 import { h } from '../dom.js';
-import { icon as glyph, liveChart, progress, segmented, empty, chip, liveText as text } from '../kit.js';
+import { icon as glyph, liveChart, progress, segmented, empty, chip, liveText, liveText as text } from '../kit.js';
 import { openTop } from './top.js';
-import { RATES, bytes, perSec, bits, pct, ghz, uptime, diskLabel, niceMax } from '../metrics.js';
+import { RATES, bytes, perSec, bits, pct, ghz, uptime, diskLabel, niceMax, heat, duration } from '../metrics.js';
 
 export const id = 'dashboard';
 export const title = 'Dashboard';
@@ -15,9 +15,13 @@ const COLORS = { cpu: 'var(--cat-1)', gpu: 'var(--cat-5)', mem: 'var(--cat-3)', 
 const ENGINE_ORDER = ['3D', 'Compute', 'Copy', 'VideoDecode', 'VideoEncode'];
 const engineName = k => k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
 let ui = null;
+// Laptops: charge, power draw and time left, always in view in the top bar. Hidden without a battery.
+const batteryText = liveText('');
+const batteryBadge = h('span', { class: 'ts-badge', attrs: { title: 'Battery' } }, batteryText);
+batteryBadge.style.display = 'none';
 
 export function actions(ctx) {
-  return [chip({
+  return [batteryBadge, chip({
     label: 'Overlay', pressed: ctx.overlay.show,
     onClick: () => ctx.actions.setOverlay({ show: !ctx.overlay.show }),
   }), segmented({
@@ -100,7 +104,8 @@ export function update(el, ctx) {
 
   // CPU
   ui.cpu.value.set(pct(s.cpu.total));
-  ui.cpu.meta.set(`${ghz(s.cpu.mhz)} · ${info.logical} logical processors`);
+  const sn = s.sensors ?? {};
+  ui.cpu.meta.set([ghz(s.cpu.mhz), heat(sn.cpuTemp, sn.cpuPower) || `${info.logical} logical processors`].join(' · '));
   ui.cpuStats.processes.set(s.cpu.processes.toLocaleString());
   ui.cpuStats.threads.set(s.cpu.threads.toLocaleString());
   ui.cpuStats.uptime.set(uptime(s.cpu.uptime));
@@ -128,8 +133,16 @@ export function update(el, ctx) {
     for (const k of keys) ui.engineNodes[k].set(pct(s.gpu.engines[k]));
     ui.engineNodes.shared.set(bytes(s.gpu.sharedUsed));
     const top = keys.reduce((a, k) => (s.gpu.engines[k] > s.gpu.engines[a] ? k : a), keys[0]);
-    ui.gpu.meta.set(top && s.gpu.engines[top] >= 1 ? `Busiest: ${engineName(top)}` : 'Idle');
+    const gpuHeat = heat(sn.gpuTemp, sn.gpuPower);
+    ui.gpu.meta.set(gpuHeat ? [gpuHeat, sn.gpuFanRpm != null && `Fan ${Math.round(sn.gpuFanRpm).toLocaleString()} RPM`].filter(Boolean).join(' · ')
+      : top && s.gpu.engines[top] >= 1 ? `Busiest: ${engineName(top)}` : 'Idle');
   }
+
+  // Battery (top bar)
+  const b = sn.battery;
+  batteryBadge.style.display = b ? '' : 'none';
+  if (b) batteryText.set([`${b.charging ? '⚡ ' : ''}${Math.round(b.level)}%`, b.watts != null && `${b.watts.toFixed(1)} W`,
+    b.remainingSeconds != null && `${duration(b.remainingSeconds)} left`].filter(Boolean).join(' · '));
 
   // Memory
   const load = s.mem.total ? (s.mem.used / s.mem.total) * 100 : 0;

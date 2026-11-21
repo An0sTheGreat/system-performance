@@ -241,6 +241,24 @@ sealed class MainForm : Form
                     var (ended, failed, err) = ProcessSampler.EndTask(Str(msg, "name"));
                     Reply(id, ended > 0 && failed == 0, data: JsonSerializer.Serialize(new { ended, failed }), error: err);
                     break;
+                case "sensors":   // the Sensors screen opened (on: true) or closed
+                    if (sampling is not null) sampling.WatchSensors = msg.TryGetProperty("on", out var watch) && watch.ValueKind == JsonValueKind.True;
+                    Reply(id, true);
+                    break;
+                case "elevate":   // restart as administrator for CPU, motherboard and drive sensors
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--elevated") { UseShellExecute = true, Verb = "runas" })?.Dispose();
+                        Reply(id, true);
+                        BeginInvoke(Quit);   // the elevated copy waits for this one to let go of the single-instance lock
+                    }
+                    catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) { Reply(id, false, error: "cancelled"); }
+                    break;
+                case "openExternal":   // https links only, in the default browser
+                    if (Uri.TryCreate(Str(msg, "url"), UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps)
+                    { Process.Start(new ProcessStartInfo(url.AbsoluteUri) { UseShellExecute = true })?.Dispose(); Reply(id, true); }
+                    else Reply(id, false, error: "only https:// links can be opened");
+                    break;
                 case "overlayGet":
                     Reply(id, true, data: JsonSerializer.Serialize(OverlayJson(), WebJson));
                     break;
