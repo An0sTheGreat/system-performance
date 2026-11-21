@@ -104,7 +104,7 @@ export function combo({ label, value, options, parse, onChange }) {
     attrs: { type: 'text', role: 'combobox', autocomplete: 'off', spellcheck: 'false', 'aria-label': label,
       'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': `${id}-list`, value },
   });
-  const listEl = h('ul', { class: 'ts-combo-list', attrs: { role: 'listbox', id: `${id}-list`, 'aria-label': label, hidden: true } });
+  const listEl = h('ul', { class: 'ts-combo-list', attrs: { role: 'listbox', id: `${id}-list`, 'aria-label': label, hidden: true }, onmousedown: e => e.preventDefault() });
   const message = h('p', { class: 'ts-field-message' }, 'Not a valid value');
   // Keep focus in the input while the pointer works the list or toggle, so blur does not commit early.
   const keepFocus = e => e.preventDefault();
