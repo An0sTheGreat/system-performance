@@ -1,5 +1,5 @@
 import { h } from '../dom.js';
-import { icon as glyph, row, list, segmented } from '../kit.js';
+import { icon as glyph, row, list, segmented, switchInput } from '../kit.js';
 import { RATES, bytes } from '../metrics.js';
 
 export const id = 'settings';
@@ -24,7 +24,12 @@ export function render(el, ctx) {
       name: 'rate-setting', label: 'Update interval', value: settings.rate,
       options: RATES.map(r => ({ value: r, label: `${r} ms` })),
       onChange: v => actions.setSetting('rate', v),
-    }))], 'Charts always show the last 60 seconds. Faster updates use a little more CPU. Sampling pauses while the window is minimised or in the tray. Closing the window keeps the app in the tray; use Quit there to exit.')),
+    }))], 'Charts always show the last 60 seconds. Faster updates use a little more CPU. Closing the window keeps the app in the tray; use Quit there to exit. With the window and overlay both hidden, sampling pauses, or drops to once a second for the tray icon.')),
+    section(...list('Overlay', [
+      control('Show mini overlay', switchInput({ label: 'Show mini overlay', checked: ctx.overlay.show, onChange: v => actions.setOverlay({ show: v }) })),
+      control('Lock position (click-through)', switchInput({ label: 'Lock overlay position', checked: ctx.overlay.locked, onChange: v => actions.setOverlay({ locked: v }) })),
+      control('Live CPU % in tray icon', switchInput({ label: 'Live CPU % in tray icon', checked: ctx.overlay.trayCpu, onChange: v => actions.setOverlay({ trayCpu: v }) })),
+    ], 'An always-on-top strip with CPU, GPU, RAM and network that stays up when this window is closed. Unlock it to drag it into place; lock it so clicks go through to the game or app underneath. Also in the tray icon\'s menu. It shows over borderless and windowed games, not exclusive full-screen ones.')),
     section(...list('This PC', [
       row({ title: 'Processor', trailing: info.cpuName ?? '—' }),
       row({ title: 'Logical processors', trailing: String(info.logical ?? '—') }),

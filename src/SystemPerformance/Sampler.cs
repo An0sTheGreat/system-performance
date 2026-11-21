@@ -33,6 +33,10 @@ sealed class Sampler : IDisposable
     volatile bool watch;
     long nextProcs;
     bool primed;
+    // The headline numbers of the last sample, for the overlay and the tray icon.
+    public Overlay.Reading Latest { get; private set; }
+    double? lastGpu, lastRx, lastTx;
+
     public bool WatchProcesses { set { watch = value; nextProcs = 0; primed = false; } }
 
     public Sampler()
@@ -71,6 +75,11 @@ sealed class Sampler : IDisposable
         long now = clock.ElapsedMilliseconds;
         if (now >= nextSlow) { RefreshSlow(); nextSlow = now + SlowMs; }
         var mem = Memory();
+        double cpu = Math.Min(100, pdh.Value(cpuTotal));
+        lastGpu = null; lastRx = lastTx = null;
+        var gpuSample = GpuSample();
+        var netSample = Net(now);
+        Latest = new Overlay.Reading(cpu, lastGpu, mem.Total > 0 ? (mem.Total - mem.Available) * 100.0 / mem.Total : 0, lastRx, lastTx);
         return JsonSerializer.Serialize(new
         {
             type = "metrics",
@@ -78,7 +87,7 @@ sealed class Sampler : IDisposable
             {
                 cpu = new
                 {
-                    total = Math.Min(100, pdh.Value(cpuTotal)),
+                    total = cpu,
                     cores = Cores(),
                     mhz = pdh.Value(cpuFreq) * pdh.Value(cpuPerf) / 100,
                     processes = (int)pdh.Value(procs),
@@ -87,8 +96,8 @@ sealed class Sampler : IDisposable
                 },
                 mem = new { total = mem.Total, used = mem.Total - mem.Available, commit = (long)pdh.Value(commit), commitLimit = (long)pdh.Value(commitLimit) },
                 disks = Disks(),
-                net = Net(now),
-                gpu = GpuSample(),
+                net = netSample,
+                gpu = gpuSample,
                 procs = ProcSample(now),   // after GpuSample: it fills gpuByPid
             },
         }, Json);
@@ -145,7 +154,7 @@ sealed class Sampler : IDisposable
             {
                 name = nic.Name, description = nic.Description, wireless = nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211,
                 ssid = wifi.Ssid, signal = wifi.Signal, linkMbps = nic.Speed / 1_000_000,
-                rx = first ? 0 : rx, tx = first ? 0 : tx,
+                rx = lastRx = first ? 0 : rx, tx = lastTx = first ? 0 : tx,
             };
         }
         catch (NetworkInformationException) { nic = null; return null; }
@@ -179,7 +188,8 @@ sealed class Sampler : IDisposable
         }
         var rounded = engines.ToDictionary(e => e.Key, e => Math.Round(Math.Min(100, e.Value), 1));
         long Mem(IntPtr c) => (long)pdh.Array(c).Where(m => m.Name.Contains(gpu.Luid, StringComparison.OrdinalIgnoreCase)).Sum(m => m.Value);
-        return new { util = rounded.Count == 0 ? 0 : rounded.Values.Max(), engines = rounded, dedicatedUsed = Mem(gpuDedicated), sharedUsed = Mem(gpuShared) };
+        lastGpu = rounded.Count == 0 ? 0 : rounded.Values.Max();
+        return new { util = lastGpu, engines = rounded, dedicatedUsed = Mem(gpuDedicated), sharedUsed = Mem(gpuShared) };
     }
 
     object? ProcSample(long now)

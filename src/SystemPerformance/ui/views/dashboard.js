@@ -2,7 +2,7 @@
 // sample and only writes changed text nodes, two path attributes per chart and the core bars.
 
 import { h } from '../dom.js';
-import { icon as glyph, liveChart, progress, segmented, empty, liveText as text } from '../kit.js';
+import { icon as glyph, liveChart, progress, segmented, empty, chip, liveText as text } from '../kit.js';
 import { openTop } from './top.js';
 import { RATES, bytes, perSec, bits, pct, ghz, uptime, diskLabel, niceMax } from '../metrics.js';
 
@@ -17,7 +17,10 @@ const engineName = k => k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
 let ui = null;
 
 export function actions(ctx) {
-  return [segmented({
+  return [chip({
+    label: 'Overlay', pressed: ctx.overlay.show,
+    onClick: () => ctx.actions.setOverlay({ show: !ctx.overlay.show }),
+  }), segmented({
     name: 'rate', label: 'Update interval', value: ctx.settings.rate,
     options: RATES.map(r => ({ value: r, label: `${r} ms` })),
     onChange: v => ctx.actions.setSetting('rate', v),

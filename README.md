@@ -1,9 +1,11 @@
 # System Performance
 
 A one-screen Windows dashboard for CPU, GPU, memory, disk and Wi-Fi/Ethernet, with live 60-second charts.
-Updates every 1000, 500 or 100 ms (top-right switch, or Settings). Closing the window (X) keeps it running in the tray; right-click the tray icon → Quit to exit. Sampling pauses while minimised or in the tray.
+Updates every 1000, 500 or 100 ms (top-right switch, or Settings). Closing the window (X) keeps it running in the tray; right-click the tray icon → Quit to exit. With the window and overlay both hidden, sampling pauses (or drops to once a second for the live tray icon).
 
 **Top apps:** the *Top apps* button on the CPU, GPU, Memory and Disk cards opens a live list of the programs using the most of that resource (grouped by program, refreshed every second), sortable by CPU, memory, disk I/O or GPU. **End** (click twice to confirm) closes every process of that program. Windows-critical processes, and the WebView2 process this app's window runs on, are refused.
+
+**Mini overlay:** a small always-on-top strip with CPU, GPU, RAM and network that stays up while the main window is closed, so you can watch it over a game or full-screen app. Turn it on with the *Overlay* button on the dashboard, in Settings, or from the tray icon's menu. Unlock it to drag it into place; lock it (the default) so clicks pass through to whatever is underneath. It shows over borderless and windowed games, but not exclusive full-screen ones. The tray icon can also show live CPU % (on by default; tooltip shows CPU, RAM and GPU).
 
 - **Download:** the latest standalone `SystemPerformance.exe` is on the [Releases page](https://github.com/An0sTheGreat/system-performance/releases). .NET is bundled; it needs the WebView2 Runtime, which Windows 11 already has.
 - **Build:** `./build.ps1` (needs the .NET 10 Desktop Runtime to run) or `./build.ps1 -Standalone` (bundles .NET). Needs the .NET 10 SDK; Node runs the UI tests.
@@ -17,8 +19,8 @@ Design system copied from Tokenscope (`ui/design/tokens.css`, `components.css`);
 
 ## Future Plans
 
-1. **Mini overlay and live tray icon.** A small always-on-top strip (CPU, GPU, RAM, network) that you can place over games or full-screen apps, and that clicks pass through. The tray icon would show live CPU % so the window doesn't need to be open. *For gamers, streamers, and anyone watching a long job.*
-2. **Temperatures, clocks, fans, power and battery.** CPU and GPU temperature and power draw in watts, fan speeds, and on laptops the battery drain rate and time left. Needs a sensor library such as LibreHardwareMonitor; some readings need administrator rights. *For gamers, overclockers and laptop users.*
-3. **History and session recording.** Hours or days of history instead of the last 60 seconds, a timeline to scroll back through, and a "record" button for a game, render or build that produces a summary (average, peak, time throttled) and a CSV export. *For developers, benchmarking, and "it was slow at 3 pm" problems.*
-4. **Alerts.** Rules such as "GPU above 85 °C for 30 seconds", "less than 10% memory free" or "C: over 95% full" that raise a Windows notification, plus an option to start with Windows so it keeps watching. *For home-server owners, IT staff, and long unattended jobs.*
-5. **Per-app network use.** A Network column in Top apps showing which programs are sending and receiving. Windows has no cheap counter for this, so it needs an ETW (Event Tracing for Windows) session, as Resource Monitor uses.
+1. **Temperatures, clocks, fans, power and battery.** CPU and GPU temperature and power draw in watts, fan speeds, and on laptops the battery drain rate and time left. Needs a sensor library such as LibreHardwareMonitor; some readings need administrator rights. *For gamers, overclockers and laptop users.*
+2. **History and session recording.** Hours or days of history instead of the last 60 seconds, a timeline to scroll back through, and a "record" button for a game, render or build that produces a summary (average, peak, time throttled) and a CSV export. *For developers, benchmarking, and "it was slow at 3 pm" problems.*
+3. **Alerts.** Rules such as "GPU above 85 °C for 30 seconds", "less than 10% memory free" or "C: over 95% full" that raise a Windows notification, plus an option to start with Windows so it keeps watching. *For home-server owners, IT staff, and long unattended jobs.*
+4. **Per-app network use.** A Network column in Top apps showing which programs are sending and receiving. Windows has no cheap counter for this, so it needs an ETW (Event Tracing for Windows) session, as Resource Monitor uses.
+5. **Overlay hotkey and layout.** A global shortcut (such as Ctrl+Shift+O) to show or hide the overlay mid-game, a choice of which metrics it shows, and a vertical layout.

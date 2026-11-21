@@ -7,11 +7,13 @@ export const hosted = !!webview;
 const pending = new Map();
 let nextId = 1;
 let onSample = null;
+let onOverlay = null;
 let demoTimer = 0;
 
 webview?.addEventListener('message', e => {
   const m = e.data;
   if (m?.type === 'metrics') { onSample?.(m.data); return; }
+  if (m?.type === 'overlay') { onOverlay?.(m.data); return; }
   const p = pending.get(m?.id);
   if (p) { pending.delete(m.id); p(m); }
 });
@@ -41,4 +43,17 @@ export async function endTask(name) {
   if (!hosted) return demoEnd(name);
   const r = await request('endTask', { name });
   return { ok: !!r.ok, ended: r.data?.ended ?? 0, failed: r.data?.failed ?? 0, error: r.error };
+}
+
+// Mini overlay + tray icon settings are owned by the host (the tray menu changes them too).
+// listen(state) hears every change, whoever made it.
+let demoOverlay = { show: false, locked: true, trayCpu: true };
+export async function overlay(listen) {
+  onOverlay = listen;
+  return hosted ? (await request('overlayGet', {})).data : { ...demoOverlay };
+}
+export function setOverlay(patch) {
+  if (hosted) { request('overlaySet', patch); return; }
+  demoOverlay = { ...demoOverlay, ...patch };
+  onOverlay?.({ ...demoOverlay });
 }

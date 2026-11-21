@@ -73,6 +73,17 @@ export function segmented({ name, label, options, value, onChange }) {
   return el;
 }
 
+export function switchInput({ label, checked, onChange }) {
+  return h('input', {
+    class: 'ts-switch', attrs: { type: 'checkbox', role: 'switch', 'aria-label': label, checked },
+    onchange: e => onChange(e.target.checked),
+  });
+}
+
+export function chip({ label, pressed, onClick }) {
+  return h('button', { class: 'ts-chip', attrs: { type: 'button', 'aria-pressed': String(!!pressed) }, onclick: onClick }, label);
+}
+
 // A row of controls: leading group left, trailing group right; wraps when narrow.
 export function toolbar(leading, trailing) {
   return h('div', { class: 'ts-toolbar' }, h('div', { class: 'ts-toolbar-group' }, leading), trailing && h('div', { class: 'ts-toolbar-group' }, trailing));

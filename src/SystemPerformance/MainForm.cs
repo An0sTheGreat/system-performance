@@ -30,9 +30,23 @@ sealed class MainForm : Form
     Thread? sampler;
     Sampler? sampling;
     volatile int intervalMs = 1000;
-    volatile bool minimized, closing;   // minimized = nothing on screen (minimised or hidden in the tray): sampling pauses
+    volatile bool minimized, closing;   // minimized = main window not on screen (minimised or in the tray)
     readonly NotifyIcon tray = new();
     bool quitting, trayHintShown, disposed;
+
+    // Mini overlay and live tray icon. Their settings live here (overlay.json), not in the page, because the
+    // tray menu changes them too; the page reads them with "overlayGet" and hears changes as {type: "overlay"}.
+    sealed record OverlayState(bool Show = false, bool Locked = true, bool TrayCpu = true, int X = int.MinValue, int Y = int.MinValue);
+    static readonly string OverlayFile = Path.Combine(DataDir, "overlay.json");
+    static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
+    OverlayState ov = new();
+    readonly Overlay overlay = new();
+    readonly ToolStripMenuItem showOverlayItem = new("Show overlay") { CheckOnClick = true };
+    readonly ToolStripMenuItem lockOverlayItem = new("Lock overlay (click-through)") { CheckOnClick = true };
+    volatile bool overlayOn, trayLive;
+    Icon? trayNumber;
+    int trayValue = -1;
+    long nextTray;
     int posting;   // 1 while a sample waits for the UI thread: a busy page skips ticks instead of queueing them
     readonly AutoResetEvent wake = new(false);
 
@@ -53,9 +67,73 @@ sealed class MainForm : Form
         tray.Text = AppTitle;
         tray.ContextMenuStrip = new ContextMenuStrip();
         tray.ContextMenuStrip.Items.Add("Open", null, (_, _) => ShowAndActivate());
+        tray.ContextMenuStrip.Items.Add(showOverlayItem);
+        tray.ContextMenuStrip.Items.Add(lockOverlayItem);
+        tray.ContextMenuStrip.Items.Add(new ToolStripSeparator());
         tray.ContextMenuStrip.Items.Add("Quit", null, (_, _) => Quit());
+        showOverlayItem.Click += (_, _) => SetOverlay(ov with { Show = showOverlayItem.Checked });
+        lockOverlayItem.Click += (_, _) => SetOverlay(ov with { Locked = lockOverlayItem.Checked });
         tray.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) ShowAndActivate(); };
         tray.Visible = true;
+
+        overlay.Moved += p => SetOverlay(ov with { X = p.X, Y = p.Y });
+        try { ov = JsonSerializer.Deserialize<OverlayState>(File.ReadAllText(OverlayFile)) ?? new(); }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { }
+    }
+
+    protected override void OnShown(EventArgs e) { base.OnShown(e); SetOverlay(ov, save: false); }
+
+    // Applies overlay settings everywhere: the overlay window, the tray menu and icon, the sampler, the page.
+    void SetOverlay(OverlayState next, bool save = true)
+    {
+        bool placing = next.Show && !overlay.Visible;
+        ov = next;
+        overlayOn = ov.Show;
+        trayLive = ov.TrayCpu;
+        showOverlayItem.Checked = ov.Show;
+        lockOverlayItem.Checked = ov.Locked;
+        lockOverlayItem.Enabled = ov.Show;
+        overlay.Locked = ov.Locked;
+        if (!ov.TrayCpu && trayNumber is not null) { tray.Icon = Icon; trayNumber.Dispose(); trayNumber = null; trayValue = -1; }
+        if (placing)
+        {
+            overlay.Show();
+            overlay.ShowReading(sampling?.Latest ?? default);   // draws, which gives the window its size
+            var saved = new Point(ov.X, ov.Y);
+            var screen = Screen.AllScreens.FirstOrDefault(sc => sc.WorkingArea.Contains(saved)) ?? Screen.FromControl(this);
+            overlay.Location = screen.WorkingArea.Contains(saved)
+                ? saved
+                : new Point(screen.WorkingArea.Right - overlay.Width - LogicalToDeviceUnits(16), screen.WorkingArea.Top + LogicalToDeviceUnits(16));
+        }
+        else if (!ov.Show && overlay.Visible) overlay.Hide();
+        wake.Set();
+        if (save)
+        {
+            try { Directory.CreateDirectory(DataDir); File.WriteAllText(OverlayFile, JsonSerializer.Serialize(ov)); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        if (web.CoreWebView2 is not null)
+            web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "overlay", data = OverlayJson() }, WebJson));
+    }
+
+    object OverlayJson() => new { show = ov.Show, locked = ov.Locked, trayCpu = ov.TrayCpu };
+
+    // Tray: tooltip always; the icon shows CPU % when that's on. At most once a second.
+    void UpdateTray(Overlay.Reading r)
+    {
+        long now = Environment.TickCount64;
+        if (now < nextTray) return;
+        nextTray = now + 1000;
+        var text = $"CPU {r.Cpu:0}% · RAM {r.Mem:0}%" + (r.Gpu is double g ? $" · GPU {g:0}%" : "");
+        tray.Text = text.Length <= 127 ? text : AppTitle;
+        overlay.KeepOnTop();
+        int value = (int)Math.Round(r.Cpu);
+        if (!ov.TrayCpu || value == trayValue) return;
+        trayValue = value;
+        var old = trayNumber;
+        trayNumber = Overlay.NumberIcon(value, SystemInformation.SmallIconSize);
+        tray.Icon = trayNumber;
+        old?.Dispose();
     }
 
     void Quit() { quitting = true; Close(); }
@@ -163,6 +241,14 @@ sealed class MainForm : Form
                     var (ended, failed, err) = ProcessSampler.EndTask(Str(msg, "name"));
                     Reply(id, ended > 0 && failed == 0, data: JsonSerializer.Serialize(new { ended, failed }), error: err);
                     break;
+                case "overlayGet":
+                    Reply(id, true, data: JsonSerializer.Serialize(OverlayJson(), WebJson));
+                    break;
+                case "overlaySet":   // any of show / locked / trayCpu; the new state comes back as an "overlay" push
+                    bool Flag(string name, bool current) => msg.TryGetProperty(name, out var f) && f.ValueKind is JsonValueKind.True or JsonValueKind.False ? f.GetBoolean() : current;
+                    SetOverlay(ov with { Show = Flag("show", ov.Show), Locked = Flag("locked", ov.Locked), TrayCpu = Flag("trayCpu", ov.TrayCpu) });
+                    Reply(id, true);
+                    break;
                 case "interval":
                     SetInterval(msg);
                     Reply(id, true);
@@ -187,22 +273,29 @@ sealed class MainForm : Form
         while (!closing)
         {
             long started = clock.ElapsedMilliseconds;
-            if (minimized) { wake.WaitOne(); continue; }
+            // Full rate while the window or the overlay is on screen; once a second for the tray icon alone; else pause.
+            bool page = !minimized, live = page || overlayOn;
+            if (!live && !trayLive) { wake.WaitOne(); continue; }
             if (Interlocked.CompareExchange(ref posting, 1, 0) == 0)
             {
                 try
                 {
                     var json = sampling!.SampleJson();
+                    var reading = sampling.Latest;
                     BeginInvoke(() =>
                     {
                         posting = 0;
-                        if (!IsDisposed && web.CoreWebView2 is not null) web.CoreWebView2.PostWebMessageAsJson(json);
+                        if (IsDisposed) return;
+                        if (page && web.CoreWebView2 is not null) web.CoreWebView2.PostWebMessageAsJson(json);
+                        if (overlay.Visible) overlay.ShowReading(reading);
+                        UpdateTray(reading);
                     });
                 }
                 catch (InvalidOperationException) { return; }   // window gone
                 catch (Exception ex) { posting = 0; Debug.WriteLine(ex); }
             }
-            wake.WaitOne(Math.Max(1, intervalMs - (int)(clock.ElapsedMilliseconds - started)));
+            int interval = live ? intervalMs : Math.Max(intervalMs, 1000);
+            wake.WaitOne(Math.Max(1, interval - (int)(clock.ElapsedMilliseconds - started)));
         }
     }
 
@@ -239,6 +332,7 @@ sealed class MainForm : Form
         }
         closing = true;
         tray.Visible = false;
+        overlay.Hide();
         wake.Set();
         SavePlacement();
         base.OnFormClosing(e);
@@ -256,6 +350,8 @@ sealed class MainForm : Form
             sampling?.Dispose();
             wake.Dispose();
             tray.Dispose();
+            trayNumber?.Dispose();
+            overlay.Dispose();
         }
         base.Dispose(disposing);
     }

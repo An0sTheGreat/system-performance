@@ -16,13 +16,14 @@ const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)
 // History lives here, not in a view, so charts keep their minute when you visit Settings and come back.
 const history = Object.fromEntries(['cpu', 'gpu', 'mem', 'disk', 'rx', 'tx'].map(k => [k, new Series(capacity(settings.rate))]));
 let info = {};
+let overlay = { show: false, locked: true, trayCpu: true };
 let sample = null;
 let viewRoot = null;
 const $ = id => document.getElementById(id);
 const knownView = id => (VIEWS.some(v => v.id === id) ? id : null);
 let viewId = knownView(location.hash.slice(1)) ?? 'dashboard';
 const currentView = () => VIEWS.find(v => v.id === viewId) ?? VIEWS[0];
-const ctx = (animate = false) => ({ info, sample, history, settings, animate, actions });
+const ctx = (animate = false) => ({ info, sample, history, settings, overlay, animate, actions });
 
 function onSample(s) {
   sample = s;
@@ -40,6 +41,7 @@ const actions = {
   navigate(id) { location.hash = `#${id}`; },
   watchProcesses: on => bridge.setProcesses(on),
   endTask: name => bridge.endTask(name),
+  setOverlay: patch => bridge.setOverlay(patch),
   setSetting(key, value) {
     if (settings[key] === value) return;
     settings[key] = value;
@@ -103,4 +105,10 @@ applyTheme();
 buildNav();
 syncNav();
 info = await bridge.start(settings.rate, onSample);
+overlay = await bridge.overlay(state => {
+  overlay = state;
+  const view = currentView();
+  $('bar-actions').replaceChildren(...(view.actions?.(ctx()) ?? []));
+  if (view.id === 'settings') render(false);
+});
 render(true);
