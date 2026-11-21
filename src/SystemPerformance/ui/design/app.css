@@ -97,3 +97,26 @@
 .ts-engines { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--size-engine-min), 1fr)); gap: var(--space-4); }
 .ts-engine { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
 .ts-engine-head { display: flex; justify-content: space-between; font: var(--text-footnote); color: var(--color-label-2); & strong { color: var(--color-label); } }
+
+/* Combo box (kit.js combo): .ts-field with a toggle button and a floating listbox.
+   The wrapper keeps the field and its validation message together. */
+.ts-combo { position: relative; }
+.ts-combo-toggle {
+  display: grid; place-items: center; flex: none;
+  inline-size: var(--size-icon); block-size: var(--size-icon); padding: 0;
+  border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-label-2); cursor: pointer;
+  & svg { inline-size: 100%; block-size: 100%; rotate: 90deg; }
+  &:hover { color: var(--color-label); }
+}
+.ts-combo-list {
+  position: absolute; z-index: 10; inset-inline: 0; inset-block-start: calc(100% + var(--space-1));
+  max-block-size: 16rem; overflow-y: auto; margin: 0; padding: var(--space-1); list-style: none;
+  border-radius: var(--radius-md); background: var(--color-bg-2); box-shadow: var(--shadow-popover);
+}
+.ts-combo-list[hidden] { display: none; }
+.ts-combo-option {
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+  font: var(--text-callout); color: var(--color-label); cursor: default;
+  &:hover { background: var(--color-fill-2); }
+  &[aria-selected="true"] { background: var(--color-tint-soft); color: var(--color-tint); }
+}

@@ -87,6 +87,84 @@ export function chip({ label, pressed, onClick }) {
   return h('button', { class: 'ts-chip', attrs: { type: 'button', 'aria-pressed': String(!!pressed) }, onclick: onClick }, label);
 }
 
+// Validate typed text through the caller's parse (null = invalid).
+export function comboCommit(text, parse) {
+  const value = parse(text);
+  return value == null ? { ok: false, value: null } : { ok: true, value };
+}
+
+let comboSeq = 0;
+// Dropdown + type-in field. The toggle shows every option; typing filters by substring.
+// Enter/blur commit through parse; an invalid commit sets aria-invalid and skips onChange.
+export function combo({ label, value, options, parse, onChange }) {
+  const id = `ts-combo-${++comboSeq}`;
+  let all = options, shown = options, active = -1, open = false, last = value;
+  const input = h('input', {
+    class: 'ts-field-input',
+    attrs: { type: 'text', role: 'combobox', autocomplete: 'off', spellcheck: 'false', 'aria-label': label,
+      'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': `${id}-list`, value },
+  });
+  const listEl = h('ul', { class: 'ts-combo-list', attrs: { role: 'listbox', id: `${id}-list`, 'aria-label': label, hidden: true } });
+  const message = h('p', { class: 'ts-field-message' }, 'Not a valid value');
+  // Keep focus in the input while the pointer works the list or toggle, so blur does not commit early.
+  const keepFocus = e => e.preventDefault();
+
+  const paint = () => {
+    listEl.replaceChildren(...shown.map((text, i) => h('li', {
+      class: 'ts-combo-option',
+      attrs: { role: 'option', id: `${id}-o${i}`, 'aria-selected': String(i === active) },
+      onmousedown: keepFocus,
+      onclick: () => { input.value = text; close(); commit(); },
+    }, text)));
+    listEl.hidden = !open || shown.length === 0;
+    input.setAttribute('aria-expanded', String(open && shown.length > 0));
+    if (active >= 0) input.setAttribute('aria-activedescendant', `${id}-o${active}`); else input.removeAttribute('aria-activedescendant');
+    listEl.children[active]?.scrollIntoView?.({ block: 'nearest' });
+  };
+  const show = list => { shown = list; active = -1; open = true; paint(); };
+  const close = () => { open = false; active = -1; paint(); };
+  const commit = () => {
+    if (input.value === last && !input.hasAttribute('aria-invalid')) return; // Enter then blur must not fire twice
+    const r = comboCommit(input.value, parse);
+    if (r.ok) { input.removeAttribute('aria-invalid'); last = input.value; onChange(r.value, input.value); }
+    else input.setAttribute('aria-invalid', 'true');
+  };
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    show(all.filter(o => o.toLowerCase().includes(q)));
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) show(all);
+      if (!shown.length) return;
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      active = (active + step + shown.length) % shown.length;
+      paint();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (open && active >= 0) input.value = shown[active];
+      close(); commit();
+    } else if (e.key === 'Escape' && open) { e.preventDefault(); close(); }
+  });
+  input.addEventListener('blur', () => { if (open) close(); commit(); });
+
+  const toggle = h('button', {
+    class: 'ts-combo-toggle', attrs: { type: 'button', tabindex: '-1', 'aria-label': 'Show options' },
+    onmousedown: keepFocus,
+    onclick: () => { input.focus(); if (open) close(); else show(all); },
+  }, icon('chevron'));
+  const field = h('div', { class: 'ts-field ts-combo' }, input, toggle, listEl);
+  const el = h('div', { class: 'ts-combo-wrap' }, field, message);
+  // The brief's markup puts p.ts-field-message right after the field; the wrapper keeps the pair together.
+  return {
+    el,
+    setOptions(next) { all = next; if (open) show(all); },
+    setValue(text) { input.value = last = text; input.removeAttribute('aria-invalid'); },
+  };
+}
+
 // A row of controls: leading group left, trailing group right; wraps when narrow.
 export function toolbar(leading, trailing) {
   return h('div', { class: 'ts-toolbar' }, h('div', { class: 'ts-toolbar-group' }, leading), trailing && h('div', { class: 'ts-toolbar-group' }, trailing));
