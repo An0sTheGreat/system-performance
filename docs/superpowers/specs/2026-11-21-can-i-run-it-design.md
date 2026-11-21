@@ -165,8 +165,8 @@ Quant [Q4_K_M · 4.9 GB ▾]  Image projector [mmproj-F16 · 0.9 GB ▾ | None] 
 
 - Anchors: the recommended GPU ≈ 60 FPS at 1080p High, and the minimum GPU ≈ 30 FPS at 1080p Low.
   *(Claude's call:)* the recommended anchor drives the estimate. The minimum anchor is used only when
-  there's no recommended spec, converted as a recommended score = minimum score × 1.8 (30 FPS at Low →
-  60 FPS at High).
+  there's no recommended spec, converted as a recommended score = minimum score × 2.2 (the typical gap
+  between published minimum and recommended GPUs).
 - GPU FPS at 1080p High ≈ 60 × (yourScore / recScore). Preset multipliers relative to High: Low ×1.8,
   Medium ×1.35, Ultra ×0.75. Resolution: × (1920·1080 / pixels)^0.75. Estimates above 300 FPS show as
   "300+" (an old or weak recommended spec otherwise predicts nonsense for a modern GPU).
