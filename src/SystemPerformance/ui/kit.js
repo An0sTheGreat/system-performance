@@ -20,6 +20,8 @@ const ICONS = {
   chevron: 'M9 6l6 6-6 6',
   thermo: 'M10 4a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z M12 11v5',
   battery: 'M3 8h15v8H3z M18 11h2v2h-2 M6 11v2',
+  gauge: 'M4.5 17a8.5 8.5 0 1 1 15 0 M12 13l4-4 M12 13v.01',
+  search: 'M10.5 17a6.5 6.5 0 1 0 0-13a6.5 6.5 0 1 0 0 13 M15.5 15.5L20 20',
 };
 
 export function icon(name, cls) {

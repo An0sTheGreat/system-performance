@@ -120,3 +120,27 @@
   &:hover { background: var(--color-fill-2); }
   &[aria-selected="true"] { background: var(--color-tint-soft); color: var(--color-tint); }
 }
+
+/* Can I Run It? (views/canirun*.js) */
+.ts-cir-toggle { display: flex; justify-content: center; & .ts-segmented { inline-size: min(100%, 16rem); } }
+.ts-cir-controls { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); }
+.ts-cir-control { display: flex; align-items: center; gap: var(--space-2); flex: 1 1 10rem; min-inline-size: 0;
+  & .ts-combo-wrap { flex: 1; min-inline-size: 0; } }
+.ts-cir-label { font: var(--text-footnote); font-weight: 600; color: var(--color-label-2); white-space: nowrap; }
+.ts-cir-cover { flex: none; inline-size: 120px; block-size: 45px; margin: 0; border-radius: var(--radius-sm); object-fit: cover; background: var(--color-fill-2); }
+.ts-cir-cover--none { display: grid; place-items: center; color: var(--color-label-3); & svg { inline-size: var(--size-icon); block-size: var(--size-icon); } }
+.ts-cir-game { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.ts-cir-game-name { margin: 0; font: var(--text-title-3); font-weight: 600; }
+.ts-cir-muted { color: var(--color-label-2); font-weight: 400; }
+.ts-cir-verdict { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.ts-cir-verdict-line { margin: 0; font: var(--text-title-2); font-weight: 700;
+  &[data-verdict="great"] { color: var(--color-positive); } &[data-verdict="below"] { color: var(--color-negative); } }
+.ts-cir-checks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ts-cir-suggest { margin: var(--space-2) 0 0; font: var(--text-callout); color: var(--color-label-2); }
+.ts-cir-star { margin-inline-start: var(--space-2); }
+.ts-cir-split { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+@container (inline-size < 880px) { .ts-cir-split { grid-template-columns: minmax(0, 1fr); } }
+.ts-cir-req { table-layout: fixed; & td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+  & th[scope="row"] { inline-size: 3.5rem; font-weight: 600; color: var(--color-label-2); }
+  & thead th { position: static; } }
+.ts-cir-note { margin: 0; font: var(--text-footnote); color: var(--color-label-2); }

@@ -81,13 +81,21 @@ export function niceMax(v, floor = 1) {
 }
 
 // Settings read back from storage: anything unknown falls back to the default.
-export const DEFAULTS = { theme: 'system', rate: 1000, pingInternet: false };
+// resolution/aspect null = the display's own (Can I Run It? reads it from screen at render time).
+export const DEFAULTS = { theme: 'system', rate: 1000, pingInternet: false, cirMode: 'gaming', resolution: null, aspect: null, targetFps: 60, context: 8192 };
+const intIn = (v, lo, hi, def) => (Number.isInteger(v) && v >= lo && v <= hi ? v : def);
+const textOr = (v, def) => (typeof v === 'string' && v.trim() ? v : def);
 export function parseSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
   return {
     theme: ['system', 'light', 'dark'].includes(s.theme) ? s.theme : DEFAULTS.theme,
     rate: RATES.includes(s.rate) ? s.rate : DEFAULTS.rate,
     pingInternet: s.pingInternet === true,
+    cirMode: ['gaming', 'ai'].includes(s.cirMode) ? s.cirMode : DEFAULTS.cirMode,
+    resolution: textOr(s.resolution, DEFAULTS.resolution),
+    aspect: textOr(s.aspect, DEFAULTS.aspect),
+    targetFps: intIn(s.targetFps, 10, 1000, DEFAULTS.targetFps),
+    context: intIn(s.context, 512, 1048576, DEFAULTS.context),
   };
 }
 

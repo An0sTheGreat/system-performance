@@ -38,9 +38,13 @@ test('niceMax rounds up with headroom and respects the floor', () => {
 });
 
 test('settings fall back to defaults', () => {
-  assert.deepEqual(parseSettings(null), { theme: 'system', rate: 1000, pingInternet: false });
-  assert.deepEqual(parseSettings({ theme: 'dark', rate: 100, pingInternet: true }), { theme: 'dark', rate: 100, pingInternet: true });
-  assert.deepEqual(parseSettings({ theme: 'neon', rate: 7, pingInternet: 'yes' }), { theme: 'system', rate: 1000, pingInternet: false });
+  const cir = { cirMode: 'gaming', resolution: null, aspect: null, targetFps: 60, context: 8192 };
+  assert.deepEqual(parseSettings(null), { theme: 'system', rate: 1000, pingInternet: false, ...cir });
+  assert.deepEqual(parseSettings({ theme: 'dark', rate: 100, pingInternet: true }), { theme: 'dark', rate: 100, pingInternet: true, ...cir });
+  assert.deepEqual(parseSettings({ theme: 'neon', rate: 7, pingInternet: 'yes' }), { theme: 'system', rate: 1000, pingInternet: false, ...cir });
+  assert.deepEqual(['cirMode','targetFps','context'].map(k => parseSettings({ cirMode: 'x', targetFps: 5, context: 'a' })[k]), ['gaming', 60, 8192]);
+  assert.deepEqual(parseSettings({ cirMode: 'ai', resolution: '3440 × 1440', aspect: '21:9', targetFps: 144, context: 32768 }),
+    { theme: 'system', rate: 1000, pingInternet: false, cirMode: 'ai', resolution: '3440 × 1440', aspect: '21:9', targetFps: 144, context: 32768 });
 });
 
 test('top apps sort by the chosen resource, ties by name', () => {

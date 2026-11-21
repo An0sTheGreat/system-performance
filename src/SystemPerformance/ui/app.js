@@ -3,6 +3,7 @@ import { h, transition, closeSheet } from './dom.js';
 import * as bridge from './bridge.js';
 import { Series, capacity, parseSettings } from './metrics.js';
 import * as dashboard from './views/dashboard.js';
+import * as canirun from './views/canirun.js';
 import * as cpuView from './views/cpu.js';
 import * as gpuView from './views/gpu.js';
 import * as memoryView from './views/memory.js';
@@ -12,7 +13,7 @@ import * as sensorsView from './views/sensors.js';
 import * as settingsView from './views/settings.js';
 import { updateTop } from './views/top.js';
 
-const ALL_VIEWS = [dashboard, cpuView, gpuView, memoryView, disksView, networkView, sensorsView, settingsView];
+const ALL_VIEWS = [dashboard, canirun, cpuView, gpuView, memoryView, disksView, networkView, sensorsView, settingsView];
 const KEY = 'sysperf.settings.v1';
 
 // localStorage is a convenience only: reads and writes may fail and the app must still work.
