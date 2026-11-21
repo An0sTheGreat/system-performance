@@ -38,6 +38,12 @@ static class Program
             bmp.Save(png, System.Drawing.Imaging.ImageFormat.Png);
             return 0;
         }
+        if (args is ["--inventory"])   // prints the hardware inventory the detail tabs show
+        {
+            using var s = new Sampler();
+            Console.WriteLine(s.InventoryJson());
+            return 0;
+        }
         if (args is ["--sample"])   // prints two samples; checks the counters work on this PC
         {
             using var s = new Sampler();

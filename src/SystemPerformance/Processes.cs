@@ -18,16 +18,16 @@ sealed partial class ProcessSampler : IDisposable
     Dictionary<(long Pid, long Created), (long Cpu, long Io)> last = [], next = [];
     long lastAt;
 
-    public sealed record App(string Name, int Count, double Cpu, long Mem, double Io, double Gpu);
+    public sealed record App(string Name, int Count, double Cpu, long Mem, double Io, double Gpu, long Vram);
 
-    public List<App> Sample(IReadOnlyDictionary<int, double> gpuByPid)
+    public List<App> Sample(IReadOnlyDictionary<int, double> gpuByPid, IReadOnlyDictionary<int, long> vramByPid)
     {
         if (!Read()) return [];
         long now = Stopwatch.GetTimestamp();
         double elapsed100ns = lastAt == 0 ? 0 : Stopwatch.GetElapsedTime(lastAt, now).Ticks;
         lastAt = now;
         int cores = Environment.ProcessorCount;
-        var apps = new Dictionary<string, (int Count, double Cpu, long Mem, double Io, double Gpu)>(StringComparer.OrdinalIgnoreCase);
+        var apps = new Dictionary<string, (int Count, double Cpu, long Mem, double Io, double Gpu, long Vram)>(StringComparer.OrdinalIgnoreCase);
 
         // SYSTEM_PROCESS_INFORMATION (x64): next offset @0, private working set @8, create @32, user @40,
         // kernel @48, image name (UNICODE_STRING: length @56, buffer @64), pid @80, read/write bytes @232/@240.
@@ -50,7 +50,7 @@ sealed partial class ProcessSampler : IDisposable
                 next[key] = (cpu, io);
                 if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
                 var a = apps.GetValueOrDefault(name);
-                apps[name] = (a.Count + 1, a.Cpu + cpuPct, a.Mem + Marshal.ReadInt64(p, 8), a.Io + ioRate, Math.Max(a.Gpu, gpuByPid.GetValueOrDefault((int)pid)));
+                apps[name] = (a.Count + 1, a.Cpu + cpuPct, a.Mem + Marshal.ReadInt64(p, 8), a.Io + ioRate, Math.Max(a.Gpu, gpuByPid.GetValueOrDefault((int)pid)), a.Vram + vramByPid.GetValueOrDefault((int)pid));
             }
             int offset = Marshal.ReadInt32(p);
             if (offset == 0) break;
@@ -59,7 +59,7 @@ sealed partial class ProcessSampler : IDisposable
         (last, next) = (next, last);
         next.Clear();
         return apps.Select(kv => new App(kv.Key, kv.Value.Count, Math.Round(Math.Min(100, kv.Value.Cpu), 2), kv.Value.Mem,
-            Math.Round(kv.Value.Io), Math.Round(Math.Min(100, kv.Value.Gpu), 1))).ToList();
+            Math.Round(kv.Value.Io), Math.Round(Math.Min(100, kv.Value.Gpu), 1), kv.Value.Vram)).ToList();
     }
 
     bool Read()

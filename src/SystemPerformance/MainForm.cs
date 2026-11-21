@@ -209,7 +209,7 @@ sealed class MainForm : Form
 
     // Bridge: page posts {id, type, ...}; host replies {id, ok, data?, error?}. Every request gets a reply.
     // Samples are pushed unasked as {type: "metrics", data}.
-    void OnWebMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    async void OnWebMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         JsonElement id = default;
         try
@@ -240,6 +240,16 @@ sealed class MainForm : Form
                 case "endTask":
                     var (ended, failed, err) = ProcessSampler.EndTask(Str(msg, "name"));
                     Reply(id, ended > 0 && failed == 0, data: JsonSerializer.Serialize(new { ended, failed }), error: err);
+                    break;
+                case "inventory":   // what the hardware is; WMI takes a second or two, so off the UI thread
+                    var s = sampling ??= new Sampler();
+                    var json = await Task.Run(s.InventoryJson);
+                    Reply(id, true, data: json);
+                    break;
+                case "network":   // the Network tab opened or closed; internet: also ping 1.1.1.1 (opt-in)
+                    sampling?.WatchNetwork(msg.TryGetProperty("on", out var non) && non.ValueKind == JsonValueKind.True,
+                        msg.TryGetProperty("internet", out var inet) && inet.ValueKind == JsonValueKind.True);
+                    Reply(id, true);
                     break;
                 case "sensors":   // the Sensors screen opened (on: true) or closed
                     if (sampling is not null) sampling.WatchSensors = msg.TryGetProperty("on", out var watch) && watch.ValueKind == JsonValueKind.True;
