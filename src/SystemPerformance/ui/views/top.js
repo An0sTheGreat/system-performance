@@ -5,17 +5,18 @@ import { h, openSheet } from '../dom.js';
 import { icon as glyph, segmented, liveText } from '../kit.js';
 import { bytes, perSec, pctFine, topApps } from '../metrics.js';
 
-const RESOURCES = {
+export const RESOURCES = {
   cpu: { label: 'CPU', short: 'CPU', format: a => pctFine(a.cpu) },
   mem: { label: 'Memory', short: 'Mem', format: a => bytes(a.mem) },
   io: { label: 'Disk I/O', short: 'I/O', format: a => perSec(a.io) },
   gpu: { label: 'GPU', short: 'GPU', format: a => pctFine(a.gpu) },
+  vram: { label: 'VRAM', short: 'VRAM', format: a => bytes(a.vram ?? 0) },
 };
 const SHOWN = 15;
 let sheet = null;   // { key, list, rows: Map<name,row>, apps, banner, actions, keys }
 
 export function openTop(key, ctx) {
-  const keys = Object.keys(RESOURCES).filter(k => k !== 'gpu' || ctx.info.gpuName);
+  const keys = Object.keys(RESOURCES).filter(k => (k !== 'gpu' && k !== 'vram') || ctx.info.gpuName);
   const list = h('ul', { class: 'ts-list', attrs: { 'aria-live': 'off' } },
     Array.from({ length: 6 }, () => h('li', null, h('div', { class: 'ts-row' }, h('span', { class: 'ts-skeleton', attrs: { style: 'width: 60%' } })))));
   const banner = h('div');

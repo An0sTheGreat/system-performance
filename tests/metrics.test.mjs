@@ -38,9 +38,9 @@ test('niceMax rounds up with headroom and respects the floor', () => {
 });
 
 test('settings fall back to defaults', () => {
-  assert.deepEqual(parseSettings(null), { theme: 'system', rate: 1000 });
-  assert.deepEqual(parseSettings({ theme: 'dark', rate: 100 }), { theme: 'dark', rate: 100 });
-  assert.deepEqual(parseSettings({ theme: 'neon', rate: 7 }), { theme: 'system', rate: 1000 });
+  assert.deepEqual(parseSettings(null), { theme: 'system', rate: 1000, pingInternet: false });
+  assert.deepEqual(parseSettings({ theme: 'dark', rate: 100, pingInternet: true }), { theme: 'dark', rate: 100, pingInternet: true });
+  assert.deepEqual(parseSettings({ theme: 'neon', rate: 7, pingInternet: 'yes' }), { theme: 'system', rate: 1000, pingInternet: false });
 });
 
 test('top apps sort by the chosen resource, ties by name', () => {

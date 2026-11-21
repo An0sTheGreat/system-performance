@@ -17,6 +17,7 @@ const ICONS = {
   ethernet: 'M6 4h12v10H6z M9 14v3 M15 14v3 M5 20h14 M12 17v3',
   warning: 'M12 4l9 16H3z M12 10v4 M12 17v.5',
   empty: 'M4 19h16 M7 16v-4 M12 16V8 M17 16v-7',
+  chevron: 'M9 6l6 6-6 6',
   thermo: 'M10 4a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z M12 11v5',
   battery: 'M3 8h15v8H3z M18 11h2v2h-2 M6 11v2',
 };

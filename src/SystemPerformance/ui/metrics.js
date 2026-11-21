@@ -81,12 +81,13 @@ export function niceMax(v, floor = 1) {
 }
 
 // Settings read back from storage: anything unknown falls back to the default.
-export const DEFAULTS = { theme: 'system', rate: 1000 };
+export const DEFAULTS = { theme: 'system', rate: 1000, pingInternet: false };
 export function parseSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
   return {
     theme: ['system', 'light', 'dark'].includes(s.theme) ? s.theme : DEFAULTS.theme,
     rate: RATES.includes(s.rate) ? s.rate : DEFAULTS.rate,
+    pingInternet: s.pingInternet === true,
   };
 }
 

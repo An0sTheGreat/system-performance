@@ -45,13 +45,16 @@ const labelled = (label, figure, bar) => h('div', null,
 const legend = items => h('div', { class: 'ts-chart-legend' }, items.map(([label, color]) =>
   h('span', { class: 'ts-chip' }, h('span', { class: 'ts-chip-dot', attrs: { style: `--dot: ${color}` } }), label)));
 
-function meter({ name, glyphName, color, sub, colors, label, extra = [], animate, onTop }) {
+function meter({ name, glyphName, color, sub, colors, label, extra = [], animate, onTop, onOpen }) {
   const value = text(), meta = text(''), subText = text(sub ?? ''), heading = text(name);
   const chart = liveChart(colors ?? [color], label);
   const tileGlyph = h('span', { class: 'ts-nav-icon', attrs: { style: `--tile: ${color}` } }, glyph(glyphName));
   const card = h('article', { class: `ts-card ts-meter${animate ? ' ts-enter' : ''}`, attrs: { style: `--series: ${color}`, 'aria-label': name } },
-    h('div', { class: 'ts-meter-head' }, tileGlyph,
-      h('div', { class: 'ts-meter-titles' }, h('h3', { class: 'ts-card-title' }, heading), h('p', { class: 'ts-meter-sub' }, subText)),
+    h('div', { class: 'ts-meter-head' },
+      // The tile and title open the hardware's own tab.
+      h('button', { class: 'ts-meter-link', attrs: { type: 'button', title: `Open the ${name} tab` }, onclick: onOpen }, tileGlyph,
+        h('div', { class: 'ts-meter-titles' }, h('h3', { class: 'ts-card-title' }, heading), h('p', { class: 'ts-meter-sub' }, subText)),
+        glyph('chevron', 'ts-meter-chevron')),
       onTop && h('button', { class: 'ts-button ts-button--plain ts-meter-action', attrs: { type: 'button', 'aria-label': `Top apps by ${name}` }, onclick: onTop }, 'Top apps')),
     h('div', { class: 'ts-meter-figure' }, h('span', { class: 'ts-stat-value' }, value), h('span', { class: 'ts-stat-meta' }, meta)),
     chart, extra);
@@ -61,15 +64,16 @@ function meter({ name, glyphName, color, sub, colors, label, extra = [], animate
 export function render(el, ctx) {
   const { info, animate } = ctx;
   const top = key => () => openTop(key, ctx);
+  const open = tab => () => ctx.actions.navigate(tab);
 
   const cores = h('div', { class: 'ts-cores', attrs: { role: 'img', 'aria-label': 'Load per logical processor' } });
   const cpuStats = stats({ processes: 'Processes', threads: 'Threads', uptime: 'Up time' });
-  const cpu = meter({ name: 'CPU', glyphName: 'cpu', color: COLORS.cpu, sub: info.cpuName, label: 'CPU usage, last 60 seconds', extra: [cores, cpuStats.el], animate, onTop: top('cpu') });
+  const cpu = meter({ name: 'CPU', glyphName: 'cpu', color: COLORS.cpu, sub: info.cpuName, label: 'CPU usage, last 60 seconds', extra: [cores, cpuStats.el], animate, onTop: top('cpu'), onOpen: open('cpu') });
 
   const gpuBar = progress('Dedicated GPU memory'), gpuMem = text();
   const gpuEngines = h('dl', { class: 'ts-kv' });
   const gpu = info.gpuName
-    ? meter({ name: 'GPU', glyphName: 'gpu', color: COLORS.gpu, sub: info.gpuName, label: 'GPU usage, last 60 seconds', extra: [labelled('Dedicated memory', gpuMem, gpuBar), gpuEngines], animate, onTop: top('gpu') })
+    ? meter({ name: 'GPU', glyphName: 'gpu', color: COLORS.gpu, sub: info.gpuName, label: 'GPU usage, last 60 seconds', extra: [labelled('Dedicated memory', gpuMem, gpuBar), gpuEngines], animate, onTop: top('gpu'), onOpen: open('gpu') })
     : null;
   const gpuCard = gpu?.card ?? h('article', { class: `ts-card ts-meter${animate ? ' ts-enter' : ''}` },
     empty({ glyph: 'gpu', title: 'No GPU found', text: 'Windows reported no hardware graphics adapter.' }));
@@ -77,15 +81,15 @@ export function render(el, ctx) {
   const memBar = progress('Committed memory'), commit = text();
   const memStats = stats({ used: 'In use', avail: 'Available', load: 'Load' });
   const mem = meter({ name: 'Memory', glyphName: 'memory', color: COLORS.mem, sub: `${bytes(info.memTotal ?? 0)} installed`, label: 'Memory usage, last 60 seconds',
-    extra: [labelled('Committed', commit, memBar), memStats.el], animate, onTop: top('mem') });
+    extra: [labelled('Committed', commit, memBar), memStats.el], animate, onTop: top('mem'), onOpen: open('memory') });
 
   const disks = h('div', { class: 'ts-disks' });
-  const disk = meter({ name: 'Disk', glyphName: 'disk', color: COLORS.disk, label: 'Busiest disk active time, last 60 seconds', extra: [disks], animate, onTop: top('io') });
+  const disk = meter({ name: 'Disk', glyphName: 'disk', color: COLORS.disk, label: 'Busiest disk active time, last 60 seconds', extra: [disks], animate, onTop: top('io'), onOpen: open('disks') });
 
   const netStats = stats({ adapter: 'Adapter', network: 'Network', signal: 'Signal', link: 'Link speed', rx: 'Receive', tx: 'Send' });
   const net = meter({
     name: 'Network', glyphName: 'wifi', color: COLORS.rx, colors: [COLORS.rx, COLORS.tx], label: 'Network throughput, last 60 seconds',
-    extra: [legend([['Receive', COLORS.rx], ['Send', COLORS.tx]]), netStats.el], animate,
+    extra: [legend([['Receive', COLORS.rx], ['Send', COLORS.tx]]), netStats.el], animate, onOpen: open('network'),
   });
 
   el.replaceChildren(
@@ -93,7 +97,7 @@ export function render(el, ctx) {
     h('div', { class: 'ts-grid ts-grid--halves' }, disk.card, net.card));
   el.querySelectorAll('.ts-enter').forEach((c, i) => c.style.setProperty('--i', String(i)));
 
-  ui = { cpu, cores, cpuStats, gpu, gpuBar, gpuMem, gpuEngines, engineNodes: {}, engineKeys: '', mem, memBar, commit, memStats, disk, disks, diskNodes: [], diskKeys: '', net, netStats, netWireless: null };
+  ui = { ctx, cpu, cores, cpuStats, gpu, gpuBar, gpuMem, gpuEngines, engineNodes: {}, engineKeys: '', mem, memBar, commit, memStats, disk, disks, diskNodes: [], diskKeys: '', net, netStats, netWireless: null };
   if (ctx.sample) update(el, ctx);
 }
 
@@ -166,7 +170,7 @@ export function update(el, ctx) {
   if (diskKeys !== ui.diskKeys) {
     ui.diskKeys = diskKeys;
     ui.diskNodes = s.disks.map(d => ({ name: diskLabel(d.name), value: text(), meta: text('') }));
-    ui.disks.replaceChildren(...ui.diskNodes.map(n => h('div', { class: 'ts-disk' },
+    ui.disks.replaceChildren(...ui.diskNodes.map((n, i) => h('button', { class: 'ts-disk', attrs: { type: 'button', title: `Open ${n.name}` }, onclick: () => ui.ctx.actions.navigate('disks', { disk: s.disks[i].name }) },
       h('div', { class: 'ts-disk-head' }, h('span', { class: 'ts-disk-name' }, n.name), h('span', { class: 'ts-disk-value' }, n.value)),
       h('div', { class: 'ts-disk-meta' }, n.meta))));
   }

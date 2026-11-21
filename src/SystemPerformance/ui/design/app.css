@@ -46,7 +46,11 @@
    Purpose: every physical disk in the disk meter, in as many columns as fit.
    Anatomy: .ts-disks > .ts-disk > (.ts-disk-head > .ts-disk-name + .ts-disk-value) + .ts-disk-meta */
 .ts-disks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--size-disk-min)), 1fr)); gap: var(--space-3) var(--space-5); }
-.ts-disk { min-inline-size: 0; }
+.ts-disk {
+  min-inline-size: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer;
+  border-radius: var(--radius-sm);
+  &:hover .ts-disk-name, &:focus-visible .ts-disk-name { color: var(--color-tint); }
+}
 .ts-disk-head { display: flex; justify-content: space-between; gap: var(--space-2); }
 .ts-disk-value { font: var(--text-subhead); font-weight: 600; color: var(--color-label); }
 .ts-disk-meta { font: var(--text-caption); color: var(--color-label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -58,3 +62,44 @@
 .ts-top-trailing { display: flex; align-items: center; gap: var(--space-3); }
 .ts-top-value { font-weight: 600; color: var(--color-label); }
 .ts-button--plain.ts-button--negative { color: var(--color-negative); }
+
+/* ── Hardware tabs ───────────────────────────────────────────────────────────
+   ts-live--tall / --mini: chart heights for a tab's main chart and small per-engine charts.
+   ts-meter-link: a dashboard card's tile + title as a button that opens its tab.
+   ts-coregrid > ts-core-tile (> ts-core-tile-fill, knob --value 0…1): one tile per logical processor.
+   ts-stackbar > ts-stackbar-seg (knob --seg colour, flex-grow inline): the memory composition bar.
+   ts-engines: grid of GPU engine tiles. */
+.ts-live--tall { min-block-size: var(--size-live-chart-tall); }
+.ts-live--mini { min-block-size: var(--size-live-chart-mini); flex: none; block-size: var(--size-live-chart-mini); }
+
+.ts-meter-link {
+  display: flex; align-items: center; gap: var(--space-3); min-inline-size: 0;
+  padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer;
+  border-radius: var(--radius-sm);
+  &:hover .ts-card-title, &:focus-visible .ts-card-title { color: var(--color-tint); }
+}
+.ts-meter-chevron { inline-size: var(--size-icon); block-size: var(--size-icon); color: var(--color-label-3); flex: none; }
+
+.ts-coregrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--size-core-tile), 1fr)); gap: var(--space-2); }
+.ts-core-tile {
+  position: relative; overflow: clip;
+  display: flex; flex-direction: column; gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm); background: var(--color-fill-2);
+  & > span { position: relative; }
+}
+.ts-core-tile-fill {
+  position: absolute; inset: 0;
+  background: var(--series); opacity: var(--opacity-area);
+  transform-origin: bottom; scale: 1 var(--value, 0);
+  transition: scale var(--dur-fast) linear;
+}
+.ts-core-tile-label { font: var(--text-caption); color: var(--color-label-2); }
+.ts-core-tile-value { font: var(--text-subhead); font-weight: 600; color: var(--color-label); }
+
+.ts-stackbar { display: flex; gap: var(--hairline); block-size: var(--size-stackbar); border-radius: var(--radius-pill); overflow: clip; background: var(--color-fill); }
+.ts-stackbar-seg { --seg: var(--color-fill); background: var(--seg); min-inline-size: 0; }
+
+.ts-engines { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--size-engine-min), 1fr)); gap: var(--space-4); }
+.ts-engine { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
+.ts-engine-head { display: flex; justify-content: space-between; font: var(--text-footnote); color: var(--color-label-2); & strong { color: var(--color-label); } }

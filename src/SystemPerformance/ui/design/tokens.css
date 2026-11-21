@@ -121,6 +121,11 @@
   --size-line: 2px;              /* chart line stroke; progress indicator lines */
   --size-live-chart: 64px;       /* minimum live chart height in a meter card (it grows to fill) */
   --size-disk-min: 220px;        /* narrowest column of the disk list before it wraps */
+  --size-live-chart-tall: 200px; /* the main chart on a hardware tab */
+  --size-live-chart-mini: 48px;  /* a small per-engine chart */
+  --size-core-tile: 84px;        /* one logical processor tile on the CPU tab */
+  --size-engine-min: 170px;      /* narrowest GPU engine tile */
+  --size-stackbar: 16px;         /* memory composition bar thickness */
   --size-core-bar: 32px;         /* one logical-core bar in the CPU card */
   --size-core-min: 14px;         /* narrowest a core bar may get before the grid wraps */
   --size-focus: 3px;             /* focus ring width */

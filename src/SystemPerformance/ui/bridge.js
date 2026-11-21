@@ -1,6 +1,6 @@
 // Host messaging. Views never import this; app.js does.
 // In a plain browser (design preview) a simulated machine stands in for the host.
-import { demoInfo, demoSample, demoWatch, demoEnd, demoSensors } from './demo.js';
+import { demoInfo, demoSample, demoWatch, demoEnd, demoSensors, demoInventory, demoNetwork } from './demo.js';
 
 const webview = globalThis.chrome?.webview;
 export const hosted = !!webview;
@@ -65,3 +65,13 @@ export function setSensors(on) { if (hosted) request('sensors', { on }); else de
 export async function elevate() { return hosted ? !!(await request('elevate', {})).ok : false; }
 
 export function openExternal(url) { if (hosted) request('openExternal', { url }); else globalThis.open(url, '_blank', 'noopener'); }
+
+// What the hardware is (models, drivers, modules, caches). Takes the host a second or two.
+export async function inventory() {
+  if (!hosted) return demoInventory();
+  const r = await request('inventory', {});
+  return r.ok ? r.data : null;
+}
+
+// Router latency (and, opt-in, 1.1.1.1) rides along in samples as s.ping while on.
+export function setNetwork(on, internet) { if (hosted) request('network', { on, internet: !!internet }); else demoNetwork(on, internet); }
