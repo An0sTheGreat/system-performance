@@ -28,6 +28,16 @@ static class Program
             Console.WriteLine(list ?? "no sensor list");
             return 0;
         }
+        if (args is ["--overlay-png", var png])   // renders the overlay strip with live readings to a transparent PNG
+        {
+            using var s = new Sampler();
+            for (int i = 0; i < 40 && !s.Latest.GpuTemp.HasValue; i++) { s.SampleJson(); Thread.Sleep(500); }
+            s.SampleJson();
+            using var overlay = new Overlay();
+            using var bmp = overlay.Render(s.Latest, 2f);
+            bmp.Save(png, System.Drawing.Imaging.ImageFormat.Png);
+            return 0;
+        }
         if (args is ["--sample"])   // prints two samples; checks the counters work on this PC
         {
             using var s = new Sampler();

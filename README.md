@@ -1,7 +1,41 @@
 # System Performance
 
-A one-screen Windows dashboard for CPU, GPU, memory, disk and Wi-Fi/Ethernet, with live 60-second charts.
-Updates every 1000, 500 or 100 ms (top-right switch, or Settings). Closing the window (X) keeps it running in the tray; right-click the tray icon → Quit to exit. With the window and overlay both hidden, sampling pauses (or drops to once a second for the live tray icon).
+**Your whole PC on one screen: CPU, GPU, memory, every disk and your network, live, up to ten times a second.**
+
+[**⬇ Download the latest release**](https://github.com/An0sTheGreat/system-performance/releases/latest) · one `.exe`, nothing to install · free and open source
+
+![System Performance dashboard in dark mode](docs/screenshots/dashboard-dark.png)
+
+Task Manager makes you click through tabs and refreshes twice a second at its fastest. Hardware monitors show hundreds of rows in a tree and leave you to work out what matters. System Performance puts the five things you check, CPU, GPU, memory, disks and network, side by side on one screen, each with its own 60-second chart. It updates every second, every half second or ten times a second, and it looks like a Windows 11 app rather than a 2005 utility.
+
+## Why use it
+
+- **Everything at once.** Five live cards on one screen, with no tabs and no scrolling. Per-core CPU bars, GPU engines and VRAM, committed memory, every physical drive, and Wi-Fi signal and throughput.
+- **Fast when you need it.** Switch between 1000, 500 and 100 ms updates from the top bar. The charts always cover the last minute.
+- **Find the culprit in one click.** *Top apps* on any card lists the programs using the most CPU, memory, disk or GPU, grouped by program, with a two-click **End**.
+- **Temperatures and watts.** GPU temperature, power, clocks and fan speed work out of the box, with CPU temperature and power when the PawnIO driver is installed. Battery drain and time left on laptops.
+- **An overlay for games.** A slim always-on-top strip of CPU, GPU, RAM, temperatures and network that clicks pass through. It's drawn by the app itself and never touches the game.
+- **Light on your PC.** Under 3% of one CPU core with the window open at the default rate on the test machine. It drops to once a second for the tray icon when hidden, and pauses completely when nothing needs it.
+- **Private and portable.** A single `.exe` with .NET bundled. No account, no telemetry, and nothing leaves your PC.
+- **At home in Windows 11.** Light and dark themes that follow Windows, a title bar that matches the app, and it closes to the tray with a live CPU % icon.
+
+| Light mode | Top apps |
+|---|---|
+| ![Dashboard in light mode](docs/screenshots/dashboard-light.png) | ![Top apps sheet sorted by CPU](docs/screenshots/top-apps.png) |
+
+| Sensors | Game overlay |
+|---|---|
+| ![Sensors screen with GPU temperatures, power, clocks and fans](docs/screenshots/sensors.png) | ![Overlay strip showing CPU, GPU with temperature, RAM and network](docs/screenshots/overlay.png) |
+
+*Screenshots from a real PC (i7-12700K, RTX 5080). The Wi-Fi network name is blurred.*
+
+## Get it
+
+Download `SystemPerformance.exe` from the [latest release](https://github.com/An0sTheGreat/system-performance/releases/latest) and run it. It needs Windows 10 or 11 (x64) and the Microsoft Edge WebView2 Runtime, which Windows 11 and up-to-date Windows 10 already have. The exe isn't code-signed, so SmartScreen may warn on first run: choose *More info → Run anyway*.
+
+## Features in detail
+
+**Dashboard.** Updates every 1000, 500 or 100 ms (top-right switch, or Settings). Closing the window (X) keeps it running in the tray; right-click the tray icon → Quit to exit. With the window and overlay both hidden, sampling pauses (or drops to once a second for the live tray icon).
 
 **Top apps:** the *Top apps* button on the CPU, GPU, Memory and Disk cards opens a live list of the programs using the most of that resource (grouped by program, refreshed every second), sortable by CPU, memory, disk I/O or GPU. **End** (click twice to confirm) closes every process of that program. Windows-critical processes, and the WebView2 process this app's window runs on, are refused.
 
@@ -13,9 +47,10 @@ What you get depends on rights and drivers:
 - **As administrator** (*Restart as administrator* on the Sensors screen): drive temperatures too.
 - **With the free [PawnIO](https://pawnio.eu/) driver and administrator rights:** CPU temperature and power, and motherboard fans and voltages. Windows only lets a signed driver read these. This app doesn't install PawnIO; get it from pawnio.eu or with `winget install namazso.PawnIO`. Some games' anti-cheat software objects to hardware-access drivers like this one.
 
-- **Download:** the latest standalone `SystemPerformance.exe` is on the [Releases page](https://github.com/An0sTheGreat/system-performance/releases). .NET is bundled; it needs the WebView2 Runtime, which Windows 11 already has.
+## Build and develop
+
 - **Build:** `./build.ps1` (needs the .NET 10 Desktop Runtime to run) or `./build.ps1 -Standalone` (bundles .NET). Needs the .NET 10 SDK; Node runs the UI tests.
-- **Check the counters on a PC:** `dist\SystemPerformance.exe --sample | Out-String` prints the hardware info, one sample and the five busiest programs; `--sensors` prints the sensor summary and every readable sensor (takes about 15 s).
+- **Check the counters on a PC:** `dist\SystemPerformance.exe --sample | Out-String` prints the hardware info, one sample and the five busiest programs; `--sensors` prints the sensor summary and every readable sensor (takes about 15 s); `--overlay-png <file>` renders the overlay with live readings to a PNG.
 - **Preview the UI in a browser:** serve `src/SystemPerformance/ui` (e.g. `python -m http.server -d src/SystemPerformance/ui`); a simulated machine stands in for the host.
 
 Data sources: Windows performance counters (PDH) for CPU, disks and GPU engines; GlobalMemoryStatusEx; DXGI for the GPU name and memory;

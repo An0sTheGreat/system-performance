@@ -94,7 +94,13 @@ sealed class Overlay : Form
     void Redraw()
     {
         if (!IsHandleCreated || !Visible) return;
-        float s = DeviceDpi / 96f;
+        using var bmp = Render(last, DeviceDpi / 96f);
+        Present(bmp);
+    }
+
+    // Draws the strip for a reading at a scale (1 = 96 dpi). Also used by --overlay-png.
+    public Bitmap Render(Reading last, float s)
+    {
         // A temperature, when the sensor is readable, rides after the load: "CPU 23%  54°". Hot at 90 °C.
         static string WithTemp(string pct, double? t) => t is double c ? $"{pct}  {Math.Round(c)}°" : pct;
         var items = new List<(string Label, string Value, string Widest, bool Hot)>
@@ -122,7 +128,7 @@ sealed class Overlay : Form
         int w = (int)Math.Ceiling(padX * 2 + widths.Sum(x => x.L + inner + x.V) + gap * (items.Count - 1));
         int h = (int)Math.Ceiling(lineH + padY * 2);
 
-        using var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+        var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
         using (var gfx = Graphics.FromImage(bmp))
         {
             gfx.SmoothingMode = SmoothingMode.AntiAlias;
@@ -147,7 +153,7 @@ sealed class Overlay : Form
                 x += widths[i].V + gap;
             }
         }
-        Present(bmp);
+        return bmp;
     }
 
     static GraphicsPath Pill(RectangleF r)
