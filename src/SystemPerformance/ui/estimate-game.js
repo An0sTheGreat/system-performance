@@ -72,6 +72,7 @@ export function parseRequirements(html) {
 export const specFromText = entry => entry && spec(entry.gpu ?? null, entry.cpu ?? null, entry.ramGb ?? null, entry.vramGb ?? null);
 
 const mean = parts => (parts?.length ? parts.reduce((s, p) => s + p.score, 0) / parts.length : null);
+const weakest = parts => (parts?.length ? Math.min(...parts.map(p => p.score)) : null);
 // Score the game needs at the 60 FPS anchor: recommended parts, else minimum parts × MIN_TO_REC.
 const anchor = (min, rec, k) => mean(rec?.[k]) ?? (mean(min?.[k]) == null ? null : mean(min[k]) * MIN_TO_REC);
 const check = (have, need) => (have == null || need == null ? 'unknown' : have >= need ? 'pass' : 'fail');
@@ -79,12 +80,12 @@ const check = (have, need) => (have == null || need == null ? 'unknown' : have >
 export function estimateGame({ min, rec, pc, res, target }) {
   const vramNeed = rec?.vramGb ?? min?.vramGb ?? null;
   const checks = {
-    gpu: check(pc.gpu?.score, mean(rec?.gpus) ?? mean(min?.gpus)),
-    cpu: check(pc.cpu?.score, mean(rec?.cpus) ?? mean(min?.cpus)),
+    gpu: check(pc.gpu?.score, weakest(rec?.gpus) ?? weakest(min?.gpus)),
+    cpu: check(pc.cpu?.score, weakest(rec?.cpus) ?? weakest(min?.cpus)),
     ram: check(pc.ramGb, rec?.ramGb ?? min?.ramGb ?? null),
     vram: check(pc.vramGb, vramNeed),
   };
-  const below = (min?.ramGb != null && pc.ramGb < min.ramGb) || (pc.gpu && mean(min?.gpus) != null && pc.gpu.score < mean(min.gpus));
+  const below = (min?.ramGb != null && pc.ramGb < min.ramGb) || (pc.gpu && weakest(min?.gpus) != null && pc.gpu.score < weakest(min.gpus));
 
   const recGpu = anchor(min, rec, 'gpus'), recCpu = anchor(min, rec, 'cpus');
   // No GPU on either side means no estimate: an unmatched requirement line is as unknown as an unmatched PC GPU.

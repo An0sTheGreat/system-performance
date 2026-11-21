@@ -64,3 +64,14 @@ test('cap, cpu limit, vram limit, verdicts, upscaler', () => {
 test('built-in games have parseable specs', () => {
   for (const game of GAMES) { const s = specFromText(game.rec ?? game.min); assert.ok(s.gpus.length > 0, game.name); assert.ok(s.ramGb > 0, game.name); }
 });
+
+test('minimum checks use the weakest listed part, not the mean', () => {
+  const spec = { gpus: [g(20), g(30)], cpus: [c(20), c(30)], ramGb: 8, vramGb: null };
+  const r = estimateGame({ min: spec, rec: spec, pc: { gpu: g(20), cpu: c(20), ramGb: 16, vramGb: 8 }, res: { w: 1920, h: 1080 }, target: 60 });
+  assert.notEqual(r.verdict, 'below');
+  assert.equal(r.checks.gpu, 'pass');
+  assert.equal(r.checks.cpu, 'pass');
+  const weak = estimateGame({ min: spec, rec: spec, pc: { gpu: g(19), cpu: c(19), ramGb: 16, vramGb: 8 }, res: { w: 1920, h: 1080 }, target: 60 });
+  assert.equal(weak.verdict, 'below');
+  assert.equal(weak.checks.gpu, 'fail');
+});
