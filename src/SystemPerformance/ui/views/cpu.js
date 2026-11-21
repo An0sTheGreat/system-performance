@@ -4,7 +4,8 @@
 import { h } from '../dom.js';
 import { icon as glyph } from '../kit.js';
 import { pct, ghz, uptime, bytes } from '../metrics.js';
-import { statRow, chartCard, draw, specCard, topCard, sensorCard, stats, note, text, fill } from './detail.js';
+import { statRow, chartCard, draw, specCard, topCard, sensorCard, stats, note, text, fill, relative } from './detail.js';
+import { progress } from '../kit.js';
 
 export const id = 'cpu';
 export const title = 'CPU';
@@ -24,7 +25,7 @@ export function render(el, ctx) {
   ctx.actions.watchSensors(true);
   const c = inv?.cpu, p = inv?.platform;
 
-  const sr = statRow([{ key: 'util', label: 'Utilization' }, { key: 'speed', label: 'Speed' }, { key: 'temp', label: 'Temperature' }, { key: 'power', label: 'Package power' }], animate);
+  const sr = statRow([{ key: 'util', label: 'Utilization' }, { key: 'speed', label: 'Speed', warn: false }, { key: 'temp', label: 'Temperature' }, { key: 'power', label: 'Package power', warn: false }], animate);
   const main = chartCard('Utilization', ['var(--cat-1)'], 'CPU utilization, last 60 seconds', { size: 'tall', animate });
   const grid = h('div', { class: 'ts-coregrid', attrs: { style: '--series: var(--cat-1)', role: 'img', 'aria-label': 'Load and clock per logical processor' } });
   const coresMeta = text('');
@@ -80,21 +81,27 @@ export function update(el, ctx) {
   ui.sr.meta.temp.set(sn.cpuTemp != null ? 'Package' : sn.ready ? 'Needs PawnIO' : 'Reading…');
   ui.sr.value.power.set(sn.cpuPower != null ? `${sn.cpuPower.toFixed(1)} W` : '—');
   ui.sr.meta.power.set(sn.cpuPower != null ? '' : sn.ready ? 'Needs PawnIO' : 'Reading…');
+  // Speed against the fastest clock seen (at least base × 1.4, a typical boost); power against its peak.
+  ui.sr.bar.util.set(cpu.total / 100);
+  ui.sr.bar.speed.set(relative('cpuMhz', cpu.mhz, (ui.baseMhz ?? 3000) * 1.4));
+  ui.sr.bar.temp.set(sn.cpuTemp != null ? sn.cpuTemp / 100 : 0);
+  ui.sr.bar.power.set(relative('cpuPower', sn.cpuPower, 65));
   draw(ui.main.chart, ctx, ['cpu'], 100);
   ui.main.meta.set('Last 60 seconds');
 
   if (ui.grid.children.length !== cpu.cores.length) {
     ui.grid.replaceChildren(...cpu.cores.map((_, i) => {
       const v = text(), mhz = text('');
-      const tileEl = h('div', { class: 'ts-core-tile' }, h('span', { class: 'ts-core-tile-fill' }),
-        h('span', { class: 'ts-core-tile-label' }, `CPU ${i}`), h('span', { class: 'ts-core-tile-value' }, v), h('span', { class: 'ts-core-tile-label' }, mhz));
-      tileEl._v = v; tileEl._mhz = mhz;
+      const bar = progress(`CPU ${i} load`);
+      const tileEl = h('div', { class: 'ts-core-tile' },
+        h('span', { class: 'ts-core-tile-label' }, `CPU ${i}`), h('span', { class: 'ts-core-tile-value' }, v), h('span', { class: 'ts-core-tile-label' }, mhz), bar);
+      tileEl._v = v; tileEl._mhz = mhz; tileEl._bar = bar;
       return tileEl;
     }));
   }
   cpu.cores.forEach((load, i) => {
     const t = ui.grid.children[i];
-    t.firstChild.style.setProperty('--value', (load / 100).toFixed(3));
+    t._bar.set(load / 100);
     t._v.set(pct(load));
     t._mhz.set(cpu.coresMhz?.[i] ? ghz(cpu.coresMhz[i]) : '');
   });

@@ -92,14 +92,16 @@ export function toolbar(leading, trailing) {
   return h('div', { class: 'ts-toolbar' }, h('div', { class: 'ts-toolbar-group' }, leading), trailing && h('div', { class: 'ts-toolbar-group' }, trailing));
 }
 
-// Progress bar whose fill the caller moves with set(fraction).
-export function progress(label) {
+// Progress bar whose fill the caller moves with set(fraction). warn: turn amber/red near full (off for
+// bars where full is good or just "busy", like free memory or throughput).
+export function progress(label, warn = true) {
   const el = h('div', { class: 'ts-progress', attrs: { role: 'progressbar', 'aria-label': label, 'aria-valuemin': '0', 'aria-valuemax': '100' } }, h('span', { class: 'ts-progress-fill' }));
   el.set = f => {
+    f = Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : 0;
     el.style.setProperty('--value', f.toFixed(3));
     el.setAttribute('aria-valuenow', String(Math.round(f * 100)));
-    el.classList.toggle('ts-progress--warning', f >= 0.85 && f < 0.95);
-    el.classList.toggle('ts-progress--over', f >= 0.95);
+    el.classList.toggle('ts-progress--warning', warn && f >= 0.85 && f < 0.95);
+    el.classList.toggle('ts-progress--over', warn && f >= 0.95);
   };
   return el;
 }

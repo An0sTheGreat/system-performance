@@ -66,7 +66,7 @@
 /* ── Hardware tabs ───────────────────────────────────────────────────────────
    ts-live--tall / --mini: chart heights for a tab's main chart and small per-engine charts.
    ts-meter-link: a dashboard card's tile + title as a button that opens its tab.
-   ts-coregrid > ts-core-tile (> ts-core-tile-fill, knob --value 0…1): one tile per logical processor.
+   ts-coregrid > ts-core-tile (> labels + ts-progress): one tile per logical processor.
    ts-stackbar > ts-stackbar-seg (knob --seg colour, flex-grow inline): the memory composition bar.
    ts-engines: grid of GPU engine tiles. */
 .ts-live--tall { min-block-size: var(--size-live-chart-tall); }
@@ -86,16 +86,10 @@
   display: flex; flex-direction: column; gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm); background: var(--color-fill-2);
-  & > span { position: relative; }
-}
-.ts-core-tile-fill {
-  position: absolute; inset: 0;
-  background: var(--series); opacity: var(--opacity-area);
-  transform-origin: bottom; scale: 1 var(--value, 0);
-  transition: scale var(--dur-fast) linear;
 }
 .ts-core-tile-label { font: var(--text-caption); color: var(--color-label-2); }
 .ts-core-tile-value { font: var(--text-subhead); font-weight: 600; color: var(--color-label); }
+.ts-stat > .ts-progress, .ts-core-tile > .ts-progress { margin-block-start: var(--space-2); }
 
 .ts-stackbar { display: flex; gap: var(--hairline); block-size: var(--size-stackbar); border-radius: var(--radius-pill); overflow: clip; background: var(--color-fill); }
 .ts-stackbar-seg { --seg: var(--color-fill); background: var(--seg); min-inline-size: 0; }

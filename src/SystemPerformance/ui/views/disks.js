@@ -5,7 +5,7 @@
 import { h } from '../dom.js';
 import { icon as glyph, progress } from '../kit.js';
 import { pct, perSec, bytes, diskLabel, niceMax } from '../metrics.js';
-import { statRow, chartCard, draw, specCard, topCard, sensorCard, picker, stats, note, text, fill } from './detail.js';
+import { statRow, chartCard, draw, specCard, topCard, sensorCard, picker, stats, note, text, fill, relative } from './detail.js';
 
 export const id = 'disks';
 export const title = 'Disks';
@@ -30,7 +30,7 @@ export function render(el, ctx) {
   const info = inv?.disks?.find(d => d.number === numberOf(selected));
   const model = d => inv?.disks?.find(x => x.number === numberOf(d.name))?.model;
 
-  const sr = statRow([{ key: 'active', label: 'Active time' }, { key: 'read', label: 'Read' }, { key: 'write', label: 'Write' }, { key: 'latency', label: 'Response time' }], animate);
+  const sr = statRow([{ key: 'active', label: 'Active time' }, { key: 'read', label: 'Read', warn: false }, { key: 'write', label: 'Write', warn: false }, { key: 'latency', label: 'Response time', warn: false }], animate);
   const activeChart = chartCard('Active time', ['var(--cat-4)'], 'Disk active time, last 60 seconds', { size: 'tall', animate });
   const rw = chartCard('Throughput', ['var(--cat-2)', 'var(--cat-6)'], 'Disk read and write speed, last 60 seconds', { size: 'tall', animate, legendItems: [['Read', 'var(--cat-2)'], ['Write', 'var(--cat-6)']] });
   const act = stats({ queue: 'Queue length', reads: 'Reads/s', writes: 'Writes/s', used: 'Used', free: 'Free', capacity: 'Capacity' });
@@ -72,7 +72,7 @@ export function leave(ctx) { ctx.actions.watchProcesses(false); ctx.actions.watc
 export function update(el, ctx) {
   if (!ui || ui.el !== el || !ctx.sample) return;
   const d = ctx.sample.disks.find(x => x.name === selected);
-  if (!d) return;
+  if (!d) { if (ctx.sample.disks.length) ctx.actions.navigate(id); return; }   // opened before the first sample: pick a disk now
   ui.sr.value.active.set(pct(d.active));
   ui.sr.meta.active.set(diskLabel(d.name));
   ui.sr.value.read.set(perSec(d.read));
@@ -81,6 +81,11 @@ export function update(el, ctx) {
   ui.sr.meta.write.set(`${(d.writesPerSec ?? 0).toLocaleString()} writes/s`);
   ui.sr.value.latency.set(`${d.latencyMs.toFixed(1)} ms`);
   ui.sr.meta.latency.set('Average per transfer');
+  // Throughput against the busiest second seen on this disk (at least 1 MB/s); latency against 10 ms or its worst.
+  ui.sr.bar.active.set(d.active / 100);
+  ui.sr.bar.read.set(relative(`read:${d.name}`, d.read, 1024 * 1024));
+  ui.sr.bar.write.set(relative(`write:${d.name}`, d.write, 1024 * 1024));
+  ui.sr.bar.latency.set(relative(`lat:${d.name}`, d.latencyMs, 10));
   draw(ui.activeChart.chart, ctx, [`disk:${d.name}/active`], 100);
   ui.activeChart.meta.set('Last 60 seconds');
   draw(ui.rw.chart, ctx, [`disk:${d.name}/read`, `disk:${d.name}/write`], peak => niceMax(peak, 1024 * 1024));

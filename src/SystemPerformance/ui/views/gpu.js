@@ -5,7 +5,7 @@
 import { h } from '../dom.js';
 import { icon as glyph, liveChart } from '../kit.js';
 import { pct, bytes, niceMax } from '../metrics.js';
-import { statRow, chartCard, draw, specCard, topCard, sensorCard, picker, note, text, fill } from './detail.js';
+import { statRow, chartCard, draw, specCard, topCard, sensorCard, picker, note, text, fill, relative } from './detail.js';
 
 export const id = 'gpu';
 export const title = 'GPU';
@@ -34,7 +34,7 @@ export function render(el, ctx) {
   if (!list.some(g => g.luid === selected)) selected = list[0]?.luid ?? null;
   const g = list.find(x => x.luid === selected) ?? { name: ctx.info.gpuName, primary: true, dedicated: ctx.info.gpuDedicated };
 
-  const sr = statRow([{ key: 'util', label: 'Utilization' }, { key: 'vram', label: 'Dedicated memory' }, { key: 'temp', label: 'Temperature' }, { key: 'power', label: 'Board power' }], animate);
+  const sr = statRow([{ key: 'util', label: 'Utilization' }, { key: 'vram', label: 'Dedicated memory' }, { key: 'temp', label: 'Temperature' }, { key: 'power', label: 'Board power', warn: false }], animate);
   const main = chartCard('Utilization', [COLOR], 'GPU utilization, last 60 seconds', { size: 'tall', animate });
   const vram = chartCard('Dedicated memory', ['var(--cat-3)'], 'Dedicated GPU memory, last 60 seconds', { size: 'tall', animate });
   const engines = h('div', { class: 'ts-engines', attrs: { style: `--series: ${COLOR}` } });
@@ -77,6 +77,10 @@ export function update(el, ctx) {
   ui.sr.value.temp.set(sn.gpuTemp != null ? `${Math.round(sn.gpuTemp)} °C` : '—');
   ui.sr.meta.temp.set(sn.gpuHotSpot != null ? `Hot spot ${Math.round(sn.gpuHotSpot)} °C` : sn.gpuFanRpm != null ? `Fan ${Math.round(sn.gpuFanRpm).toLocaleString()} RPM` : '');
   ui.sr.value.power.set(sn.gpuPower != null ? `${sn.gpuPower.toFixed(1)} W` : '—');
+  ui.sr.bar.util.set(s.util / 100);
+  ui.sr.bar.vram.set(total ? s.dedicatedUsed / total : 0);
+  ui.sr.bar.temp.set(sn.gpuTemp != null ? sn.gpuTemp / 100 : 0);
+  ui.sr.bar.power.set(relative(`gpuPower:${s.luid}`, sn.gpuPower, 100));
   ui.sr.meta.power.set([sn.gpuClock != null && `Core ${Math.round(sn.gpuClock).toLocaleString()} MHz`, sn.gpuMemoryClock != null && `Memory ${Math.round(sn.gpuMemoryClock).toLocaleString()} MHz`].filter(Boolean).join(' · '));
 
   draw(ui.main.chart, ctx, [`gpu:${s.luid}`], 100);

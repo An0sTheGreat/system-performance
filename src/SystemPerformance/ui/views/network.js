@@ -4,7 +4,7 @@
 import { h } from '../dom.js';
 import { icon as glyph, switchInput } from '../kit.js';
 import { bits, bytes, niceMax } from '../metrics.js';
-import { statRow, chartCard, draw, specCard, picker, stats, text, fill } from './detail.js';
+import { statRow, chartCard, draw, specCard, picker, stats, text, fill, relative } from './detail.js';
 
 export const id = 'network';
 export const title = 'Network';
@@ -24,7 +24,7 @@ export function render(el, ctx) {
   if (!nets.some(n => n.id === selected)) selected = nets.find(n => n.primary)?.id ?? nets[0]?.id ?? null;
   const n = nets.find(x => x.id === selected);
 
-  const sr = statRow([{ key: 'rx', label: 'Download' }, { key: 'tx', label: 'Upload' }, { key: 'ping', label: 'Router latency' }, { key: 'link', label: n?.wireless ? 'Signal' : 'Link speed' }], animate);
+  const sr = statRow([{ key: 'rx', label: 'Download', warn: false }, { key: 'tx', label: 'Upload', warn: false }, { key: 'ping', label: 'Router latency', warn: false }, { key: 'link', label: n?.wireless ? 'Signal' : 'Link speed', warn: false }], animate);
   const traffic = chartCard('Throughput', ['var(--cat-2)', 'var(--cat-6)'], 'Network receive and send, last 60 seconds', { size: 'tall', animate, legendItems: [['Receive', 'var(--cat-2)'], ['Send', 'var(--cat-6)']] });
   const latency = chartCard('Latency', ['var(--cat-4)', 'var(--cat-5)'], 'Round-trip time to the router and the internet, last 60 seconds',
     { animate, legendItems: ctx.settings.pingInternet ? [['Router', 'var(--cat-4)'], ['Internet (1.1.1.1)', 'var(--cat-5)']] : [['Router', 'var(--cat-4)']] });
@@ -62,6 +62,7 @@ export function leave(ctx) { ctx.actions.watchNetwork(false); ui = null; }
 export function update(el, ctx) {
   if (!ui || ui.el !== el || !ctx.sample) return;
   const n = (ctx.sample.nets ?? []).find(x => x.id === selected);
+  if (!n && ctx.sample.nets?.length) { ctx.actions.navigate(id); return; }   // opened before the first sample: pick an adapter now
   const p = ctx.sample.ping;
   if (n) {
     ui.sr.value.rx.set(bits(n.rx));
@@ -70,6 +71,11 @@ export function update(el, ctx) {
     ui.sr.meta.tx.set(`Peak ${bits(ctx.series(`net:${n.id}/tx`).max())}`);
     ui.sr.value.link.set(n.wireless ? (n.signal != null ? `${n.signal}%` : '—') : n.linkMbps ? `${n.linkMbps.toLocaleString()} Mbps` : '—');
     ui.sr.meta.link.set(n.wireless ? (n.wifi?.standard ?? '') : '');
+    // Traffic against the busiest second seen on this adapter (at least 1 Mbps); signal as is; wired link
+    // speed against 1 Gbps or faster.
+    ui.sr.bar.rx.set(relative(`rx:${n.id}`, n.rx, 125000));
+    ui.sr.bar.tx.set(relative(`tx:${n.id}`, n.tx, 125000));
+    ui.sr.bar.link.set(n.wireless ? (n.signal ?? 0) / 100 : (n.linkMbps ?? 0) / Math.max(1000, n.linkMbps ?? 0));
     draw(ui.traffic.chart, ctx, [`net:${n.id}/rx`, `net:${n.id}/tx`], peak => niceMax(peak, 1000));
     ui.traffic.meta.set(`↓ ${bits(n.rx)}  ↑ ${bits(n.tx)}`);
     ui.totals.rx.set(bytes(n.totalRx));
@@ -86,6 +92,7 @@ export function update(el, ctx) {
     }
   }
   ui.sr.value.ping.set(p?.router?.avg != null ? `${p.router.avg} ms` : '—');
+  ui.sr.bar.ping.set(p?.router?.avg != null ? relative('ping', p.router.avg, 50) : 0);
   ui.sr.meta.ping.set(p?.router ? `Jitter ${p.router.jitter} ms · loss ${p.router.loss}%` : p?.gateway === null ? 'No gateway' : 'Measuring…');
   draw(ui.latency.chart, ctx, ctx.settings.pingInternet ? ['ping:router', 'ping:internet'] : ['ping:router'], peak => niceMax(peak, 10));
   ui.latency.meta.set(p?.gateway ? `Router ${p.gateway}` : '');

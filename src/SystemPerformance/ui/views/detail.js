@@ -3,7 +3,7 @@
 // touches text and chart paths.
 
 import { h } from '../dom.js';
-import { icon as glyph, liveChart, liveText, row, chip } from '../kit.js';
+import { icon as glyph, liveChart, liveText, row, chip, progress } from '../kit.js';
 import { SENSOR_ORDER, sensorKind, sensorValue, topApps } from '../metrics.js';
 import { openTop, RESOURCES } from './top.js';
 
@@ -23,14 +23,25 @@ export const labelled = (label, figure, bar) => h('div', null,
 export const legend = items => h('div', { class: 'ts-chart-legend' }, items.map(([label, color]) =>
   h('span', { class: 'ts-chip' }, h('span', { class: 'ts-chip-dot', attrs: { style: `--dot: ${color}` } }), label)));
 
-// Four stat cards: [{ key, label }] -> { el, value: {key: Text}, meta: {key: Text} }
+// Four stat cards, each with a bar like the dashboard's: [{ key, label, warn }] ->
+// { el, value: {key: Text}, meta: {key: Text}, bar: {key: progress} }. warn defaults to true.
 export function statRow(items, animate) {
-  const value = {}, meta = {};
+  const value = {}, meta = {}, bar = {};
   const el = h('div', { class: 'ts-grid ts-grid--stats' }, items.map(i => h('article', { class: `ts-card ts-stat${animate ? ' ts-enter' : ''}` },
     h('span', { class: 'ts-stat-label' }, i.label),
     h('span', { class: 'ts-stat-value' }, (value[i.key] = text())),
-    h('span', { class: 'ts-stat-meta' }, (meta[i.key] = text(''))))));
-  return { el, value, meta };
+    h('span', { class: 'ts-stat-meta' }, (meta[i.key] = text(''))),
+    (bar[i.key] = progress(i.label, i.warn !== false)))));
+  return { el, value, meta, bar };
+}
+
+// A value as a share of the highest seen this session (at least floor): for bars with no fixed maximum,
+// like watts or throughput.
+const peaks = new Map();
+export function relative(key, v, floor) {
+  const top = Math.max(peaks.get(key) ?? floor, v ?? 0);
+  peaks.set(key, top);
+  return v == null ? 0 : v / top;
 }
 
 // A card holding one live chart (first series filled). size: 'tall' | 'mini' | default.

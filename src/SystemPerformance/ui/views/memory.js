@@ -23,7 +23,7 @@ export function render(el, ctx) {
   ctx.actions.watchProcesses(true);
   const mods = inv?.memory?.modules ?? [];
 
-  const sr = statRow([{ key: 'used', label: 'In use' }, { key: 'avail', label: 'Available' }, { key: 'commit', label: 'Committed' }, { key: 'cached', label: 'Cached' }], animate);
+  const sr = statRow([{ key: 'used', label: 'In use' }, { key: 'avail', label: 'Available', warn: false }, { key: 'commit', label: 'Committed' }, { key: 'cached', label: 'Cached', warn: false }], animate);
   const main = chartCard('Memory usage', ['var(--cat-3)', 'var(--cat-6)'], 'Memory in use and committed, last 60 seconds', { size: 'tall', animate, legendItems: [['In use', 'var(--cat-3)'], ['Committed', 'var(--cat-6)']] });
   const segs = Object.fromEntries(PARTS.map(([k, , color]) => [k, h('span', { class: 'ts-stackbar-seg', attrs: { style: `--seg: ${color}` } })]));
   const partText = Object.fromEntries(PARTS.map(([k]) => [k, text('')]));
@@ -82,6 +82,10 @@ export function update(el, ctx) {
   ui.sr.meta.commit.set(`of ${bytes(m.commitLimit)} limit`);
   ui.sr.value.cached.set(bytes(cached));
   ui.sr.meta.cached.set('Standby and modified pages');
+  ui.sr.bar.used.set(m.used / m.total);
+  ui.sr.bar.avail.set((m.total - m.used) / m.total);
+  ui.sr.bar.commit.set(m.commitLimit ? m.commit / m.commitLimit : 0);
+  ui.sr.bar.cached.set(cached / m.total);
   draw(ui.main.chart, ctx, ['mem', 'commit'], 100);
   ui.main.meta.set('% of RAM and of commit limit');
 
