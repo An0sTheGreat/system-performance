@@ -56,3 +56,16 @@ test('anchors and the family rule', () => {
   assert.ok(s('Ryzen 5 7520U') < s('Ryzen 5 7645HX'), 'older Zen in the 7000 laptop range scores lower');
   assert.equal(matchCpu('Core i5-12450H').name, 'Core i5-12450H');
 });
+test('unlisted Arc dGPUs do not fall back to the Arc iGPU', () => {
+  assert.equal(matchGpu('Intel(R) Arc(TM) A770M Graphics'), null);
+  assert.equal(matchGpu('Intel Arc A-series'), null);
+  assert.equal(matchGpu('Intel(R) Arc(TM) Graphics').name, 'Arc Graphics');
+});
+test('NVIDIA xxxM names do not match a Radeon iGPU', () => {
+  assert.equal(matchGpu('NVIDIA GeForce GTX 780M'), null);
+  assert.equal(matchGpu('NVIDIA GeForce GTX 660M'), null);
+});
+test('pickGpu never prefers a recognised iGPU over an unrecognised discrete card', () => {
+  assert.deepEqual(pickGpu([{ name: 'Intel(R) UHD Graphics 630', dedicated: 128e6 }, { name: 'NVIDIA RTX A2000', dedicated: 6e9 }]),
+    { gpu: null, name: 'NVIDIA RTX A2000', vramBytes: 6e9 });
+});

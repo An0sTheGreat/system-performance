@@ -123,7 +123,11 @@ const key = text => normalize(text).replace(/-/g, ' ')
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const bounded = src => new RegExp(`(?<![a-z0-9])${src}(?![a-z0-9])`, 'g');
-const index = list => list.map(item => ({ item, re: bounded(esc(key(item.name))) }));
+// The Arc iGPU is plain "Arc Graphics": a model number, "A-series" or "Pro" after it means an Arc dGPU.
+const PATTERN = { 'Arc Graphics': 'arc(?! (?:[a-z]?\\d|[ab] series|pro\\b))' };
+// Radeon iGPU keys are bare numbers once "Radeon" is stripped, so NVIDIA's "GTX 780M" must not reach them.
+const pattern = name => PATTERN[name] ?? (k => /^\d/.test(k) ? `(?<!(?:gtx|gt|mx|rtx) )${k}` : k)(esc(key(name)));
+const index = list => list.map(item => ({ item, re: bounded(pattern(item.name)) }));
 const GPU_INDEX = index(GPUS), CPU_INDEX = index(CPUS);
 
 const hits = (k, idx) => idx.flatMap(({ item, re }) => [...k.matchAll(re)].map(m => ({ at: m.index, len: m[0].length, item })));
@@ -188,7 +192,10 @@ export const cpusIn = text => scan(cpuHits(text));
 export function pickGpu(gpus) {
   const real = (gpus ?? []).filter(g => !/basic render|basic display/i.test(g.name ?? ''))
     .map(g => ({ g, gpu: matchGpu(g.name) }));
+  const mem = r => r.g.dedicated || 0;
   const matched = real.filter(r => r.gpu).sort((a, b) => b.gpu.score - a.gpu.score)[0];
-  const best = matched ?? real.sort((a, b) => (b.g.dedicated || 0) - (a.g.dedicated || 0))[0];
+  const unmatched = real.filter(r => !r.gpu).sort((a, b) => mem(b) - mem(a))[0];
+  // An unrecognised discrete card (1 GiB+, more memory than the match) beats a recognised iGPU: no estimate beats a wrong one.
+  const best = matched && !(unmatched && mem(unmatched) >= 2 ** 30 && mem(unmatched) > mem(matched)) ? matched : unmatched;
   return best ? { gpu: best.gpu, name: best.g.name, vramBytes: best.g.dedicated || 0 } : { gpu: null, name: null, vramBytes: 0 };
 }
