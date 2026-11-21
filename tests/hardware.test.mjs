@@ -65,6 +65,11 @@ test('NVIDIA xxxM names do not match a Radeon iGPU', () => {
   assert.equal(matchGpu('NVIDIA GeForce GTX 780M'), null);
   assert.equal(matchGpu('NVIDIA GeForce GTX 660M'), null);
 });
+test('older parts from real requirement specs resolve without stealing neighbours', () => {
+  assert.deepEqual(gpusIn('NVIDIA GeForce GT 730 / AMD Radeon R7 240').map(g => g.name), ['GT 730', 'R7 240']);
+  assert.equal(matchGpu('Intel(R) HD Graphics 4600').name, 'HD 4600');
+  assert.equal(matchGpu('Intel(R) UHD Graphics 630').name, 'UHD 630');
+});
 test('pickGpu never prefers a recognised iGPU over an unrecognised discrete card', () => {
   assert.deepEqual(pickGpu([{ name: 'Intel(R) UHD Graphics 630', dedicated: 128e6 }, { name: 'NVIDIA RTX A2000', dedicated: 6e9 }]),
     { gpu: null, name: 'NVIDIA RTX A2000', vramBytes: 6e9 });

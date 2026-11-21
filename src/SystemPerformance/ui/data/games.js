@@ -4,8 +4,8 @@
 export const GAMES = [
   { id: 'ns:valorant', name: 'VALORANT', image: null,
     min: { gpu: 'Intel HD 4000 / AMD Radeon R5 220', cpu: 'Intel i3-540 / AMD Athlon 200GE', ramGb: 4, vramGb: 1 },
-    // Official recommended (60 FPS): GeForce GT 730 / Radeon R7 240, i3-4150 / Ryzen 3 1200, 4 GB. Neither GPU is in the table.
-    rec: null,
+    // Official recommended (60 FPS): GeForce GT 730 / Radeon R7 240, i3-4150 / Ryzen 3 1200, 4 GB (VRAM not stated, 1 GB as min).
+    rec: { gpu: 'GeForce GT 730 / Radeon R7 240', cpu: 'Intel i3-4150 / AMD Ryzen 3 1200', ramGb: 4, vramGb: 1 },
     source: 'https://support.riotgames.com/en-us/valorant/support-tools/minimum-recommended-pc-specs' },
   { id: 'ns:league-of-legends', name: 'League of Legends', image: null,
     min: { gpu: 'GeForce 400 Series / AMD HD 6570 / Intel HD 4600 / NVIDIA GeForce 560', cpu: 'Intel Core i3-530 / AMD FX-4100', ramGb: 2, vramGb: 1 },
