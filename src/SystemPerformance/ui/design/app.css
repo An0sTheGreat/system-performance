@@ -1,0 +1,52 @@
+/* System Performance components. Built from tokens only (tokens.css), same rules as components.css. */
+
+/* ── Meter (ts-meter) ────────────────────────────────────────────────────────
+   Purpose: one resource on the dashboard (CPU, GPU, memory, disk, network).
+   Anatomy: article.ts-card.ts-meter > .ts-meter-head (> .ts-nav-icon + .ts-meter-titles > .ts-card-title + .ts-meter-sub)
+            + .ts-meter-figure (> .ts-stat-value + .ts-stat-meta) + svg.ts-live + extras + ul.ts-list?
+   Knob: --series on the card colours its chart and core bars. */
+.ts-meter { display: flex; flex-direction: column; gap: var(--space-3); min-inline-size: 0; align-self: stretch; }
+.ts-meter-head { display: flex; align-items: center; gap: var(--space-3); min-inline-size: 0; }
+.ts-meter-titles { display: flex; flex-direction: column; min-inline-size: 0; }
+.ts-meter-sub { margin: 0; font: var(--text-footnote); color: var(--color-label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-meter-figure { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+.ts-meter > .ts-chart-legend { margin-block-start: calc(-1 * var(--space-2)); }
+
+/* ── Live chart (ts-live) ────────────────────────────────────────────────────
+   Purpose: rolling last-minute chart. A fixed 1000×100 viewBox stretched to the card; strokes keep
+   their width through vector-effect. kit.liveChart() redraws paths in place each tick. */
+.ts-live { flex: 1 1 auto; min-block-size: var(--size-live-chart); }   /* grows to fill a card stretched by its row */
+.ts-live-line { vector-effect: non-scaling-stroke; }
+
+/* ── Core bars (ts-cores) ────────────────────────────────────────────────────
+   Purpose: per-logical-core load in the CPU card.
+   Anatomy: .ts-cores > span.ts-core > span.ts-core-fill   Knob: --value = 0…1 on .ts-core-fill. */
+.ts-cores { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--size-core-min), 1fr)); gap: var(--space-1); }
+.ts-core { position: relative; block-size: var(--size-core-bar); border-radius: var(--radius-sm); background: var(--color-fill-2); overflow: clip; }
+.ts-core-fill {
+  position: absolute; inset: 0;
+  background: var(--series);
+  transform-origin: bottom;
+  scale: 1 var(--value, 0);
+  transition: scale var(--dur-fast) linear;
+}
+
+/* ── Stat grid (ts-kv) ───────────────────────────────────────────────────────
+   Purpose: compact label-over-value figures inside a meter, three to a row.
+   Anatomy: dl.ts-kv > div.ts-kv-item > dt.ts-kv-label + dd.ts-kv-value */
+.ts-kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); margin: 0; }
+.ts-kv-item { min-inline-size: 0; }
+.ts-kv-label { font: var(--text-caption); color: var(--color-label-2); }
+.ts-kv-value, .ts-disk-name {
+  margin: 0; font: var(--text-subhead); font-weight: 600; color: var(--color-label);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Disk list (ts-disks) ────────────────────────────────────────────────────
+   Purpose: every physical disk in the disk meter, in as many columns as fit.
+   Anatomy: .ts-disks > .ts-disk > (.ts-disk-head > .ts-disk-name + .ts-disk-value) + .ts-disk-meta */
+.ts-disks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--size-disk-min)), 1fr)); gap: var(--space-3) var(--space-5); }
+.ts-disk { min-inline-size: 0; }
+.ts-disk-head { display: flex; justify-content: space-between; gap: var(--space-2); }
+.ts-disk-value { font: var(--text-subhead); font-weight: 600; color: var(--color-label); }
+.ts-disk-meta { font: var(--text-caption); color: var(--color-label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
