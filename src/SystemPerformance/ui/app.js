@@ -1,9 +1,10 @@
 // App shell: settings, sample history, routing and the frame every view renders into.
-import { h, transition } from './dom.js';
+import { h, transition, closeSheet } from './dom.js';
 import * as bridge from './bridge.js';
 import { Series, capacity, parseSettings } from './metrics.js';
 import * as dashboard from './views/dashboard.js';
 import * as settingsView from './views/settings.js';
+import { updateTop } from './views/top.js';
 
 const VIEWS = [dashboard, settingsView];
 const KEY = 'sysperf.settings.v1';
@@ -32,10 +33,13 @@ function onSample(s) {
   history.rx.push(s.net?.rx ?? 0);
   history.tx.push(s.net?.tx ?? 0);
   if (viewRoot?.isConnected) currentView().update?.(viewRoot, ctx());
+  if (s.procs) updateTop(s.procs);
 }
 
 const actions = {
   navigate(id) { location.hash = `#${id}`; },
+  watchProcesses: on => bridge.setProcesses(on),
+  endTask: name => bridge.endTask(name),
   setSetting(key, value) {
     if (settings[key] === value) return;
     settings[key] = value;
@@ -82,6 +86,7 @@ function go(id) {
   if (!knownView(id)) return;
   transition(() => {
     viewId = id;
+    closeSheet();
     syncNav();
     render(true);
     $('main').scrollTop = 0;

@@ -2,7 +2,8 @@
 // sample and only writes changed text nodes, two path attributes per chart and the core bars.
 
 import { h } from '../dom.js';
-import { icon as glyph, liveChart, progress, segmented, empty } from '../kit.js';
+import { icon as glyph, liveChart, progress, segmented, empty, liveText as text } from '../kit.js';
+import { openTop } from './top.js';
 import { RATES, bytes, perSec, bits, pct, ghz, uptime, diskLabel, niceMax } from '../metrics.js';
 
 export const id = 'dashboard';
@@ -23,13 +24,6 @@ export function actions(ctx) {
   })];
 }
 
-// A Text node that is only written when its value changes.
-function text(initial = '—') {
-  const node = document.createTextNode(initial);
-  node.set = v => { if (node.data !== v) node.data = v; };
-  return node;
-}
-
 // dl.ts-kv of label-over-value figures; returns the element and one Text node per key.
 function stats(labels) {
   const t = {};
@@ -44,13 +38,14 @@ const labelled = (label, figure, bar) => h('div', null,
 const legend = items => h('div', { class: 'ts-chart-legend' }, items.map(([label, color]) =>
   h('span', { class: 'ts-chip' }, h('span', { class: 'ts-chip-dot', attrs: { style: `--dot: ${color}` } }), label)));
 
-function meter({ name, glyphName, color, sub, colors, label, extra = [], animate }) {
+function meter({ name, glyphName, color, sub, colors, label, extra = [], animate, onTop }) {
   const value = text(), meta = text(''), subText = text(sub ?? ''), heading = text(name);
   const chart = liveChart(colors ?? [color], label);
   const tileGlyph = h('span', { class: 'ts-nav-icon', attrs: { style: `--tile: ${color}` } }, glyph(glyphName));
   const card = h('article', { class: `ts-card ts-meter${animate ? ' ts-enter' : ''}`, attrs: { style: `--series: ${color}`, 'aria-label': name } },
     h('div', { class: 'ts-meter-head' }, tileGlyph,
-      h('div', { class: 'ts-meter-titles' }, h('h3', { class: 'ts-card-title' }, heading), h('p', { class: 'ts-meter-sub' }, subText))),
+      h('div', { class: 'ts-meter-titles' }, h('h3', { class: 'ts-card-title' }, heading), h('p', { class: 'ts-meter-sub' }, subText)),
+      onTop && h('button', { class: 'ts-button ts-button--plain ts-meter-action', attrs: { type: 'button', 'aria-label': `Top apps by ${name}` }, onclick: onTop }, 'Top apps')),
     h('div', { class: 'ts-meter-figure' }, h('span', { class: 'ts-stat-value' }, value), h('span', { class: 'ts-stat-meta' }, meta)),
     chart, extra);
   return { card, value, meta, sub: subText, chart, heading, tileGlyph };
@@ -58,15 +53,16 @@ function meter({ name, glyphName, color, sub, colors, label, extra = [], animate
 
 export function render(el, ctx) {
   const { info, animate } = ctx;
+  const top = key => () => openTop(key, ctx);
 
   const cores = h('div', { class: 'ts-cores', attrs: { role: 'img', 'aria-label': 'Load per logical processor' } });
   const cpuStats = stats({ processes: 'Processes', threads: 'Threads', uptime: 'Up time' });
-  const cpu = meter({ name: 'CPU', glyphName: 'cpu', color: COLORS.cpu, sub: info.cpuName, label: 'CPU usage, last 60 seconds', extra: [cores, cpuStats.el], animate });
+  const cpu = meter({ name: 'CPU', glyphName: 'cpu', color: COLORS.cpu, sub: info.cpuName, label: 'CPU usage, last 60 seconds', extra: [cores, cpuStats.el], animate, onTop: top('cpu') });
 
   const gpuBar = progress('Dedicated GPU memory'), gpuMem = text();
   const gpuEngines = h('dl', { class: 'ts-kv' });
   const gpu = info.gpuName
-    ? meter({ name: 'GPU', glyphName: 'gpu', color: COLORS.gpu, sub: info.gpuName, label: 'GPU usage, last 60 seconds', extra: [labelled('Dedicated memory', gpuMem, gpuBar), gpuEngines], animate })
+    ? meter({ name: 'GPU', glyphName: 'gpu', color: COLORS.gpu, sub: info.gpuName, label: 'GPU usage, last 60 seconds', extra: [labelled('Dedicated memory', gpuMem, gpuBar), gpuEngines], animate, onTop: top('gpu') })
     : null;
   const gpuCard = gpu?.card ?? h('article', { class: `ts-card ts-meter${animate ? ' ts-enter' : ''}` },
     empty({ glyph: 'gpu', title: 'No GPU found', text: 'Windows reported no hardware graphics adapter.' }));
@@ -74,10 +70,10 @@ export function render(el, ctx) {
   const memBar = progress('Committed memory'), commit = text();
   const memStats = stats({ used: 'In use', avail: 'Available', load: 'Load' });
   const mem = meter({ name: 'Memory', glyphName: 'memory', color: COLORS.mem, sub: `${bytes(info.memTotal ?? 0)} installed`, label: 'Memory usage, last 60 seconds',
-    extra: [labelled('Committed', commit, memBar), memStats.el], animate });
+    extra: [labelled('Committed', commit, memBar), memStats.el], animate, onTop: top('mem') });
 
   const disks = h('div', { class: 'ts-disks' });
-  const disk = meter({ name: 'Disk', glyphName: 'disk', color: COLORS.disk, label: 'Busiest disk active time, last 60 seconds', extra: [disks], animate });
+  const disk = meter({ name: 'Disk', glyphName: 'disk', color: COLORS.disk, label: 'Busiest disk active time, last 60 seconds', extra: [disks], animate, onTop: top('io') });
 
   const netStats = stats({ adapter: 'Adapter', network: 'Network', signal: 'Signal', link: 'Link speed', rx: 'Receive', tx: 'Send' });
   const net = meter({

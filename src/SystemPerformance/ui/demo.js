@@ -3,6 +3,20 @@ const GB = 1024 ** 3;
 const walk = (v, step, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, v + (Math.random() - 0.5) * step));
 let cpu = 18, mem = 0.58, gpu = 22, disk = 4, rx = 2e5, tx = 4e4, t = 0;
 let cores = Array.from({ length: 16 }, () => 15);
+let watching = false, nextProcs = 0;
+const MB = 1024 ** 2;
+let apps = [
+  ['chrome', 24, 6, 2100], ['Code', 9, 3, 900], ['explorer', 1, 0.6, 140], ['Spotify', 6, 1.2, 380], ['Discord', 7, 0.9, 520],
+  ['steam', 4, 0.4, 260], ['Teams', 8, 1.5, 610], ['dwm', 1, 1.1, 150], ['svchost', 92, 0.8, 560], ['OneDrive', 1, 0.1, 90],
+  ['node', 3, 2.2, 310], ['obs64', 1, 4, 420], ['Photoshop', 1, 0.2, 1500], ['msedge', 6, 0.5, 450], ['python', 2, 0.7, 120],
+].map(([name, count, cpu, mem]) => ({ name, count, cpu, mem: mem * MB, io: 0, gpu: 0 }));
+export const demoWatch = on => { watching = on; nextProcs = 0; };
+export function demoEnd(name) {
+  if (name === 'svchost') return { ok: false, ended: 0, failed: 0, error: "svchost is part of Windows or this app and can't be ended here." };
+  const n = apps.find(a => a.name === name)?.count ?? 0;
+  apps = apps.filter(a => a.name !== name);
+  return { ok: n > 0, ended: n, failed: 0, error: n ? null : `${name} is no longer running.` };
+}
 
 export const demoInfo = () => ({
   cpuName: 'Preview CPU (simulated)', logical: 16, memTotal: 32 * GB,
@@ -19,7 +33,14 @@ export function demoSample(interval) {
   disk = walk(disk, 10 * k, 0, 60);
   rx = walk(rx, 6e5 * k, 0, 8e6);
   tx = walk(tx, 1e5 * k, 0, 2e6);
+  let procs = null;
+  if (watching && t >= nextProcs) {
+    nextProcs = t + 1000;
+    apps = apps.map(a => ({ ...a, cpu: walk(a.cpu, 2, 0, 40), io: walk(a.io, 4e6, 0, 5e7), gpu: a.name === 'obs64' || a.name === 'chrome' ? walk(a.gpu, 8, 0, 60) : 0 }));
+    procs = apps;
+  }
   return {
+    procs,
     cpu: { total: cpu, cores, mhz: 3200 + cpu * 12, processes: 312, threads: 4180, uptime: 3_600_000 * 27 + t },
     mem: { total: 32 * GB, used: mem * 32 * GB, commit: mem * 36 * GB, commitLimit: 50 * GB },
     disks: [

@@ -26,6 +26,13 @@ export function icon(name, cls) {
   }, svg('path', { d: ICONS[name] ?? ICONS.empty }));
 }
 
+// A Text node that is only written when its value changes (cheap to call on every sample).
+export function liveText(initial = '—') {
+  const node = document.createTextNode(initial);
+  node.set = v => { if (node.data !== v) node.data = v; };
+  return node;
+}
+
 export function empty({ glyph = 'empty', title, text, action }) {
   return h('div', { class: 'ts-empty' },
     h('div', { class: 'ts-empty-glyph' }, icon(glyph)),

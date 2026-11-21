@@ -1,6 +1,6 @@
 // Host messaging. Views never import this; app.js does.
 // In a plain browser (design preview) a simulated machine stands in for the host.
-import { demoInfo, demoSample } from './demo.js';
+import { demoInfo, demoSample, demoWatch, demoEnd } from './demo.js';
 
 const webview = globalThis.chrome?.webview;
 export const hosted = !!webview;
@@ -31,4 +31,14 @@ export function setRate(interval) {
   if (hosted) { request('interval', { interval }); return; }
   clearInterval(demoTimer);
   demoTimer = setInterval(() => onSample?.(demoSample(interval)), interval);
+}
+
+// Per-process data rides along in samples (s.procs, once a second) only while watching.
+export function setProcesses(on) { if (hosted) request('processes', { on }); else demoWatch(on); }
+
+// Ends every process with this program name. Resolves { ok, ended, failed, error }.
+export async function endTask(name) {
+  if (!hosted) return demoEnd(name);
+  const r = await request('endTask', { name });
+  return { ok: !!r.ok, ended: r.data?.ended ?? 0, failed: r.data?.failed ?? 0, error: r.error };
 }

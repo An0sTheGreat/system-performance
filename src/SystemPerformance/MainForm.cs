@@ -155,6 +155,14 @@ sealed class MainForm : Form
                         sampler.Start();
                     }
                     break;
+                case "processes":   // the Top apps sheet opened (on: true) or closed
+                    if (sampling is not null) sampling.WatchProcesses = msg.TryGetProperty("on", out var on) && on.ValueKind == JsonValueKind.True;
+                    Reply(id, true);
+                    break;
+                case "endTask":
+                    var (ended, failed, err) = ProcessSampler.EndTask(Str(msg, "name"));
+                    Reply(id, ended > 0 && failed == 0, data: JsonSerializer.Serialize(new { ended, failed }), error: err);
+                    break;
                 case "interval":
                     SetInterval(msg);
                     Reply(id, true);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bytes, bits, pct, uptime, diskLabel, Series, linePath, areaPath, niceMax, parseSettings, capacity } from '../src/SystemPerformance/ui/metrics.js';
+import { bytes, bits, pct, pctFine, topApps, uptime, diskLabel, Series, linePath, areaPath, niceMax, parseSettings, capacity } from '../src/SystemPerformance/ui/metrics.js';
 
 test('formatting', () => {
   assert.equal(bytes(0), '0 B');
@@ -41,4 +41,13 @@ test('settings fall back to defaults', () => {
   assert.deepEqual(parseSettings(null), { theme: 'system', rate: 1000 });
   assert.deepEqual(parseSettings({ theme: 'dark', rate: 100 }), { theme: 'dark', rate: 100 });
   assert.deepEqual(parseSettings({ theme: 'neon', rate: 7 }), { theme: 'system', rate: 1000 });
+});
+
+test('top apps sort by the chosen resource, ties by name', () => {
+  const apps = [{ name: 'b', cpu: 1, mem: 5 }, { name: 'a', cpu: 1, mem: 9 }, { name: 'c', cpu: 7, mem: 1 }];
+  assert.deepEqual(topApps(apps, 'cpu').map(a => a.name), ['c', 'a', 'b']);
+  assert.deepEqual(topApps(apps, 'mem', 2).map(a => a.name), ['a', 'b']);
+  assert.deepEqual(topApps(null, 'cpu'), []);
+  assert.equal(pctFine(0.44), '0.4%');
+  assert.equal(pctFine(42.6), '43%');
 });

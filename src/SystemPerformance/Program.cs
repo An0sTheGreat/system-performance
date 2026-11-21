@@ -18,6 +18,12 @@ static class Program
             Console.WriteLine(s.InfoJson());
             Thread.Sleep(500);
             Console.WriteLine(s.SampleJson());
+            s.WatchProcesses = true;   // processes: two snapshots a second apart give rates
+            s.SampleJson();
+            Thread.Sleep(1100);
+            var top = System.Text.Json.JsonDocument.Parse(s.SampleJson()).RootElement.GetProperty("data").GetProperty("procs")
+                .EnumerateArray().OrderByDescending(p => p.GetProperty("cpu").GetDouble()).Take(5);
+            foreach (var p in top) Console.WriteLine(p.GetRawText());
             return 0;
         }
 

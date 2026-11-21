@@ -42,12 +42,15 @@ export function svg(tag, attrs, ...children) {
 // ---- sheet: index.html provides an empty <div class="ts-sheet" inert> inside .ts-app-pane ----
 
 let sheetReturnFocus = null;
+let sheetOnClose = null;
 // While a sheet is open everything behind it is inert, so Tab and clicks stay inside the dialog.
 const setBehindInert = on => document.querySelectorAll('.ts-app-main, .ts-sidebar').forEach(el => { el.inert = on; });
 const onSheetKey = e => { if (e.key === 'Escape') closeSheet(); };
 
-export function openSheet(titleText, contentEl) {
+// onClose (optional) runs once when the sheet is dismissed.
+export function openSheet(titleText, contentEl, onClose = null) {
   const host = document.querySelector('.ts-sheet');
+  sheetOnClose = onClose;
   sheetReturnFocus = document.activeElement;
   const done = h('button', { class: 'ts-button ts-button--plain', attrs: { type: 'button' }, onclick: closeSheet }, 'Done');
   host.replaceChildren(
@@ -72,6 +75,9 @@ export function closeSheet() {
   document.removeEventListener('keydown', onSheetKey);
   sheetReturnFocus?.focus?.({ preventScroll: true });
   sheetReturnFocus = null;
+  const done = sheetOnClose;
+  sheetOnClose = null;
+  done?.();
 }
 
 // ---- tooltip: one shared .ts-tooltip on <body>, positioned with style.translate ----

@@ -50,3 +50,11 @@
 .ts-disk-head { display: flex; justify-content: space-between; gap: var(--space-2); }
 .ts-disk-value { font: var(--text-subhead); font-weight: 600; color: var(--color-label); }
 .ts-disk-meta { font: var(--text-caption); color: var(--color-label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Top apps (ts-meter-action, ts-top-*) ────────────────────────────────────
+   Purpose: the "Top apps" button in a meter header, and the value + End button of a Top apps row.
+   ts-button--negative: a plain button armed for a destructive action ("Confirm"). */
+.ts-meter-action { margin-inline-start: auto; flex: none; }
+.ts-top-trailing { display: flex; align-items: center; gap: var(--space-3); }
+.ts-top-value { font-weight: 600; color: var(--color-label); }
+.ts-button--plain.ts-button--negative { color: var(--color-negative); }

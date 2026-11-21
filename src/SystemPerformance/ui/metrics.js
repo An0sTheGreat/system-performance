@@ -21,6 +21,8 @@ export function bits(bytesPerSec) {
   return `${n.toFixed(i ? 1 : 0)} ${BIT_UNITS[i]}`;
 }
 
+// Small shares keep a decimal (0.4%), like Task Manager's process list.
+export const pctFine = v => { const n = Math.max(0, Number(v) || 0); return n < 10 ? `${n.toFixed(1)}%` : `${Math.round(n)}%`; };
 export const pct = v => `${Math.round(Math.max(0, Number(v) || 0))}%`;
 export const ghz = mhz => `${(mhz / 1000).toFixed(2)} GHz`;
 
@@ -86,4 +88,9 @@ export function parseSettings(raw) {
     theme: ['system', 'light', 'dark'].includes(s.theme) ? s.theme : DEFAULTS.theme,
     rate: RATES.includes(s.rate) ? s.rate : DEFAULTS.rate,
   };
+}
+
+// The n programs using the most of `key` (cpu | mem | io | gpu), biggest first, ties by name.
+export function topApps(apps, key, n = 15) {
+  return [...(apps ?? [])].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0) || a.name.localeCompare(b.name)).slice(0, n);
 }

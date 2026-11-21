@@ -27,6 +27,14 @@ sealed class Sampler : IDisposable
     readonly Stopwatch clock = Stopwatch.StartNew();
     (string? Ssid, int? Signal) wifi;
 
+    // Per-process sampling runs only while the page shows the Top apps sheet, once a second.
+    readonly ProcessSampler processes = new();
+    readonly Dictionary<int, double> gpuByPid = [];
+    volatile bool watch;
+    long nextProcs;
+    bool primed;
+    public bool WatchProcesses { set { watch = value; nextProcs = 0; primed = false; } }
+
     public Sampler()
     {
         cpuTotal = pdh.Add(@"\Processor Information(_Total)\% Processor Utility");
@@ -81,6 +89,7 @@ sealed class Sampler : IDisposable
                 disks = Disks(),
                 net = Net(now),
                 gpu = GpuSample(),
+                procs = ProcSample(now),   // after GpuSample: it fills gpuByPid
             },
         }, Json);
     }
@@ -148,6 +157,7 @@ sealed class Sampler : IDisposable
         // "pid_1234_luid_0x00000000_0x0000C2E1_phys_0_eng_0_engtype_3D": Task Manager's GPU % is the busiest
         // engine type, each type summed over processes. Numbered engines (Compute_0, Compute_1) fold into one.
         var engines = new Dictionary<string, double>();
+        var perPid = watch ? new Dictionary<(int Pid, string Type), double>() : null;
         foreach (var e in pdh.Array(gpuEngine))
         {
             if (!e.Name.Contains(gpu.Luid, StringComparison.OrdinalIgnoreCase)) continue;
@@ -157,10 +167,29 @@ sealed class Sampler : IDisposable
             int us = type.LastIndexOf('_');
             if (us > 0 && type[(us + 1)..].All(char.IsDigit)) type = type[..us];
             engines[type] = engines.GetValueOrDefault(type) + e.Value;
+            int end = e.Name.IndexOf('_', 4);
+            if (perPid != null && e.Name.StartsWith("pid_", StringComparison.Ordinal) && end > 4 && int.TryParse(e.Name.AsSpan(4, end - 4), out int pid))
+                perPid[(pid, type)] = perPid.GetValueOrDefault((pid, type)) + e.Value;
+        }
+        if (perPid != null)
+        {
+            // A process's GPU % is its busiest engine type, as in Task Manager.
+            gpuByPid.Clear();
+            foreach (var (k, v) in perPid) gpuByPid[k.Pid] = Math.Max(gpuByPid.GetValueOrDefault(k.Pid), v);
         }
         var rounded = engines.ToDictionary(e => e.Key, e => Math.Round(Math.Min(100, e.Value), 1));
         long Mem(IntPtr c) => (long)pdh.Array(c).Where(m => m.Name.Contains(gpu.Luid, StringComparison.OrdinalIgnoreCase)).Sum(m => m.Value);
         return new { util = rounded.Count == 0 ? 0 : rounded.Values.Max(), engines = rounded, dedicatedUsed = Mem(gpuDedicated), sharedUsed = Mem(gpuShared) };
+    }
+
+    object? ProcSample(long now)
+    {
+        if (!watch || now < nextProcs) return null;
+        nextProcs = now + 1000;
+        var apps = processes.Sample(gpuByPid);
+        if (primed) return apps;
+        primed = true;   // the first snapshot only sets the baseline for CPU and I/O rates
+        return null;
     }
 
     void RefreshSlow()
@@ -193,7 +222,7 @@ sealed class Sampler : IDisposable
     static string CpuName() =>
         (Registry.GetValue(@"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString", null) as string)?.Trim() ?? "Processor";
 
-    public void Dispose() => pdh.Dispose();
+    public void Dispose() { pdh.Dispose(); processes.Dispose(); }
 }
 
 // Minimal PDH wrapper: English counter paths (work on any display language), doubles, wildcard arrays.
