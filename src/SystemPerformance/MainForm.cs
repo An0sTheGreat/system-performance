@@ -13,7 +13,7 @@ sealed class MainForm : Form
 {
     const string AppTitle = "System Performance";
     const string Origin = "https://app.sysperf/";
-    const string Csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; " +
+    const string Csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.steamstatic.com; " +
         "connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
     static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SystemPerformance");
     static readonly string PlacementFile = Path.Combine(DataDir, "window.json");
@@ -276,6 +276,10 @@ sealed class MainForm : Form
                     bool Flag(string name, bool current) => msg.TryGetProperty(name, out var f) && f.ValueKind is JsonValueKind.True or JsonValueKind.False ? f.GetBoolean() : current;
                     SetOverlay(ov with { Show = Flag("show", ov.Show), Locked = Flag("locked", ov.Locked), TrayCpu = Flag("trayCpu", ov.TrayCpu) });
                     Reply(id, true);
+                    break;
+                case "gameSearch" or "gameDetails" or "modelSearch" or "modelInfo" or "modelFiles" or "modelConfig" or "modelGguf":   // Can I Run It?: Web builds the URL
+                    try { Reply(id, true, data: await Web.Call(Str(msg, "type")!, msg)); }
+                    catch (WebError ex) { Reply(id, false, error: ex.Message); }
                     break;
                 case "interval":
                     SetInterval(msg);

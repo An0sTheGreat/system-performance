@@ -35,6 +35,6 @@ export function render(el, ctx) {
       row({ title: 'Logical processors', trailing: String(info.logical ?? '—') }),
       row({ title: 'Memory', trailing: info.memTotal ? bytes(info.memTotal) : '—' }),
       row({ title: 'Graphics', trailing: info.gpuName ?? 'None found' }),
-    ], 'Read from Windows performance counters, DXGI and the Native Wifi API. Nothing leaves this PC.')),
+    ], 'Read from Windows performance counters, DXGI and the Native Wifi API. Only searches you type in Can I Run It? go to Steam (and its image servers) or Hugging Face.')),
     section(...list('About', [row({ title: 'System Performance', trailing: 'Version 1.3.1' })])));
 }

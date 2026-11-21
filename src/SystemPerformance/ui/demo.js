@@ -106,7 +106,7 @@ export const demoInventory = () => ({
   cpu: { name: 'Preview CPU (simulated)', manufacturer: 'Preview', sockets: 1, cores: 12, performanceCores: 8, efficiencyCores: 4, logical: 16, baseMhz: 3600,
     l1Kb: 1024, l2Kb: 12288, l3Kb: 25600, virtualization: true, socket: 'LGA1700', instructionSets: ['SSE4.2', 'AVX', 'AVX2', 'FMA3', 'AVX-VNNI', 'AES-NI', 'BMI2'], architecture: 'X64' },
   platform: { board: 'Preview Board Z690', bios: '1.0', biosDate: '2025-01-01', os: 'Microsoft Windows 11', build: '26200' },
-  gpus: [{ name: 'Preview GPU (simulated)', luid: 'luid_demo', primary: true, vendor: 'NVIDIA', dedicated: 8 * GB, shared: 16 * GB, driver: '32.0.15.0000', driverDate: '2026-01-01', display: '2560 × 1440 @ 165 Hz' }],
+  gpus: [{ name: 'NVIDIA GeForce RTX 4070', luid: 'luid_demo', primary: true, vendor: 'NVIDIA', dedicated: 12 * GB, shared: 16 * GB, driver: '32.0.15.0000', driverDate: '2026-01-01', display: '2560 × 1440 @ 165 Hz' }],
   memory: { slots: 4, modules: [
     { slot: 'DIMM A1', capacity: 16 * GB, ratedMts: 6000, configuredMts: 4800, manufacturer: 'Preview', part: 'PV-DDR5-6000', type: 'DDR5', formFactor: 'DIMM' },
     { slot: 'DIMM B1', capacity: 16 * GB, ratedMts: 6000, configuredMts: 4800, manufacturer: 'Preview', part: 'PV-DDR5-6000', type: 'DDR5', formFactor: 'DIMM' }] },
@@ -121,3 +121,62 @@ export const demoInventory = () => ({
     { letter: 'E', label: 'Backup', fileSystem: 'NTFS', total: 931 * GB, free: 631 * GB },
     { letter: 'F', label: 'Media', fileSystem: 'exFAT', total: 3726 * GB, free: 626 * GB }],
 });
+
+// Can I Run It? in the preview: canned Steam and Hugging Face replies in the host's shapes (see Web.cs).
+// Search "zzz" for no hits. The GGUF repo has 4 quants, a 2-part split and an mmproj; Qwen3-8B is safetensors only.
+const STEAM_CDN = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/';
+const steamReq = (kind, os, cpu, ram, gpu, dx, storage) => `<strong>${kind}:</strong><br><ul class="bb_ul">` +
+  ['Requires a 64-bit processor and operating system', `<strong>OS:</strong> ${os}`, `<strong>Processor:</strong> ${cpu}`, `<strong>Memory:</strong> ${ram} GB RAM`,
+    `<strong>Graphics:</strong> ${gpu}`, `<strong>DirectX:</strong> Version ${dx}`, `<strong>Storage:</strong> ${storage} GB available space`]
+    .map(li => `<li>${li}<br></li>`).join('') + '</ul>';
+const DEMO_GAMES = [
+  { id: 1245620, name: 'ELDEN RING', released: '24 Feb, 2022',
+    min: steamReq('Minimum', 'Windows 10', 'INTEL CORE I5-8400 or AMD RYZEN 3 3300X', 12, 'NVIDIA GEFORCE GTX 1060 3 GB or AMD RADEON RX 580 4 GB', 12, 60),
+    rec: steamReq('Recommended', 'Windows 10/11', 'INTEL CORE I7-8700K or AMD RYZEN 5 3600X', 16, 'NVIDIA GEFORCE GTX 1070 8 GB or AMD RADEON RX VEGA 56 8 GB', 12, 60) },
+  { id: 1091500, name: 'Cyberpunk 2077', released: '9 Dec, 2020',
+    min: steamReq('Minimum', '64-bit Windows 10', 'Core i7-6700 or Ryzen 5 1600', 12, 'GeForce GTX 1060 6GB or Radeon RX 580 8GB or Arc A380', 12, 70),
+    rec: steamReq('Recommended', '64-bit Windows 10', 'Core i7-12700 or Ryzen 7 7800X3D', 16, 'GeForce RTX 2060 SUPER or Radeon RX 5700 XT or Arc A770', 12, 70) },
+  { id: 1086940, name: 'Baldur\'s Gate 3', released: 'Aug 3, 2023',
+    min: steamReq('Minimum', 'Windows 10 64-bit', 'Intel I5 4690 / AMD FX 8350', 8, 'Nvidia GTX 970 / RX 480 / Intel Arc A380 (4GB+ of VRAM)', 11, 150),
+    rec: steamReq('Recommended', 'Windows 10 64-bit', 'Intel i7 8700K / AMD r5 3600', 16, 'Nvidia 2060 Super / RX 5700 XT / Intel Arc A580 (8GB+ of VRAM)', 11, 150) },
+];
+const DEMO_MODELS = {
+  'unsloth/gemma-3-12b-it-GGUF': {
+    info: { task: 'image-text-to-text', downloads: 182455, likes: 241, params: 11766034176, ctx: 131072, baseModel: 'google/gemma-3-12b-it', gated: false },
+    files: [['.gitattributes', 2311], ['README.md', 14882], ['gemma-3-12b-it-Q4_K_M.gguf', 7300574976], ['gemma-3-12b-it-Q5_K_M.gguf', 8445225216],
+      ['gemma-3-12b-it-Q6_K.gguf', 9661198592], ['gemma-3-12b-it-Q8_0.gguf', 12509902592], ['BF16/gemma-3-12b-it-BF16-00001-of-00002.gguf', 15831398400],
+      ['BF16/gemma-3-12b-it-BF16-00002-of-00002.gguf', 7708467200], ['mmproj-F16.gguf', 854200224]],
+    config: null,   // a GGUF repo has no config.json; the view falls back to baseModel's
+  },
+  'google/gemma-3-12b-it': {   // only its config (multimodal: the text model's layout is in text_config)
+    config: { architectures: ['Gemma3ForConditionalGeneration'], model_type: 'gemma3',
+      text_config: { hidden_size: 3840, num_hidden_layers: 48, num_attention_heads: 16, num_key_value_heads: 8, head_dim: 256, max_position_embeddings: 131072 } },
+  },
+  'Qwen/Qwen3-8B': {
+    info: { task: 'text-generation', downloads: 6189636, likes: 2209, params: 8190735360, ctx: null, baseModel: 'Qwen/Qwen3-8B-Base', gated: false },
+    files: [['.gitattributes', 1570], ['LICENSE', 11343], ['README.md', 16795], ['config.json', 728], ['generation_config.json', 239],
+      ['model-00001-of-00005.safetensors', 3996250744], ['model-00002-of-00005.safetensors', 3993160032], ['model-00003-of-00005.safetensors', 3959604768],
+      ['model-00004-of-00005.safetensors', 3187841392], ['model-00005-of-00005.safetensors', 1244659840], ['model.safetensors.index.json', 32878],
+      ['tokenizer.json', 11422654], ['tokenizer_config.json', 9732], ['vocab.json', 2776833]],
+    config: { architectures: ['Qwen3ForCausalLM'], model_type: 'qwen3', hidden_size: 4096, intermediate_size: 12288, num_hidden_layers: 36, num_attention_heads: 32,
+      num_key_value_heads: 8, head_dim: 128, max_position_embeddings: 40960, torch_dtype: 'bfloat16', vocab_size: 151936 },
+  },
+};
+const DEMO_GGUF = { 'google/gemma-3-12b-it': [{ id: 'unsloth/gemma-3-12b-it-GGUF', downloads: 182455 }] };
+const notFound = { ok: false, error: 'http 404' };
+
+export function demoWeb(type, { term = '', appId, id } = {}) {
+  const none = String(term).toLowerCase().includes('zzz');
+  const game = DEMO_GAMES.find(g => String(g.id) === String(appId));
+  const model = DEMO_MODELS[id]?.info && DEMO_MODELS[id];
+  switch (type) {
+    case 'gameSearch': return { ok: true, data: none ? [] : DEMO_GAMES.map(g => ({ id: g.id, name: g.name, image: `${STEAM_CDN}${g.id}/capsule_231x87.jpg` })) };
+    case 'gameDetails': return game ? { ok: true, data: { name: game.name, type: 'game', image: `${STEAM_CDN}${game.id}/header.jpg`, released: game.released, min: game.min, rec: game.rec } } : notFound;
+    case 'modelSearch': return { ok: true, data: none ? [] : Object.entries(DEMO_MODELS).filter(([, m]) => m.info).map(([id, m]) => ({ id, downloads: m.info.downloads, likes: m.info.likes, task: m.info.task })) };
+    case 'modelInfo': return model ? { ok: true, data: { id, ...model.info } } : notFound;
+    case 'modelFiles': return model ? { ok: true, data: model.files.map(([path, size]) => ({ path, size })) } : notFound;
+    case 'modelConfig': return { ok: true, data: DEMO_MODELS[id]?.config ?? null };
+    case 'modelGguf': return { ok: true, data: DEMO_GGUF[id] ?? [] };
+    default: return { ok: false, error: 'unknown request' };
+  }
+}

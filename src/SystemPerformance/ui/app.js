@@ -93,6 +93,7 @@ const actions = {
   setOverlay: patch => bridge.setOverlay(patch),
   elevate: () => bridge.elevate(),
   openExternal: url => bridge.openExternal(url),
+  web: (type, payload) => bridge.web(type, payload),
   setSetting(key, value) {
     if (settings[key] === value) return;
     settings[key] = value;

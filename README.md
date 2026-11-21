@@ -17,7 +17,7 @@ Task Manager makes you click through tabs and refreshes twice a second at its fa
 - **Temperatures and watts.** GPU temperature, power, clocks and fan speed work out of the box, with CPU temperature and power when the PawnIO driver is installed. Battery drain and time left on laptops.
 - **An overlay for games.** A slim always-on-top strip of CPU, GPU, RAM, temperatures and network that clicks pass through. It's drawn by the app itself and never touches the game.
 - **Light on your PC.** Under 3% of one CPU core with the window open at the default rate on the test machine. It drops to once a second for the tray icon when hidden, and pauses completely when nothing needs it.
-- **Private and portable.** A single `.exe` with .NET bundled. No account, no telemetry, and nothing leaves your PC (the internet ping on the Network tab is opt-in).
+- **Private and portable.** A single `.exe` with .NET bundled. No account, no telemetry, and nothing about your PC is sent anywhere: only searches you type in Can I Run It? go to Steam (and its image servers) or Hugging Face, and the internet ping on the Network tab is opt-in.
 - **At home in Windows 11.** Light and dark themes that follow Windows, a title bar that matches the app, and it closes to the tray with a live CPU % icon.
 
 | Light mode | Top apps |

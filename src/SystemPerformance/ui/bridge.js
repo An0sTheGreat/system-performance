@@ -1,6 +1,6 @@
 // Host messaging. Views never import this; app.js does.
 // In a plain browser (design preview) a simulated machine stands in for the host.
-import { demoInfo, demoSample, demoWatch, demoEnd, demoSensors, demoInventory, demoNetwork } from './demo.js';
+import { demoInfo, demoSample, demoWatch, demoEnd, demoSensors, demoInventory, demoNetwork, demoWeb } from './demo.js';
 
 const webview = globalThis.chrome?.webview;
 export const hosted = !!webview;
@@ -75,3 +75,12 @@ export async function inventory() {
 
 // Router latency (and, opt-in, 1.1.1.1) rides along in samples as s.ping while on.
 export function setNetwork(on, internet) { if (hosted) request('network', { on, internet: !!internet }); else demoNetwork(on, internet); }
+
+// Can I Run It?: the host fetches from Steam or Hugging Face. payload is {term}, {appId} or {id} (a repo ID), never a URL.
+// Resolves { ok, data?, error? }. The repo ID travels as "repo" because "id" is the bridge's own message ID.
+export async function web(type, payload = {}) {
+  if (!hosted) { await new Promise(r => setTimeout(r, 300)); return demoWeb(type, payload); }
+  const { id: repo, ...rest } = payload;
+  const r = await request(type, { ...rest, repo });
+  return { ok: !!r.ok, data: r.data, error: r.error };
+}

@@ -44,6 +44,13 @@ static class Program
             Console.WriteLine(s.InventoryJson());
             return 0;
         }
+        if (args is ["--web", var type, var arg])   // one Can I Run It? request; arg is the search term, Steam app ID or repo ID
+        {
+            var msg = System.Text.Json.JsonSerializer.SerializeToElement(new { term = arg, appId = arg, repo = arg });
+            try { Console.WriteLine(Web.Call(type, msg).GetAwaiter().GetResult()); }
+            catch (WebError ex) { Console.WriteLine("error: " + ex.Message); }
+            return 0;
+        }
         if (args is ["--sample"])   // prints two samples; checks the counters work on this PC
         {
             using var s = new Sampler();
