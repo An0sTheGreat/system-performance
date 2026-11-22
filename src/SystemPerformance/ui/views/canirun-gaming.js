@@ -23,7 +23,9 @@ const FOOTNOTE = 'Estimate from the published specs and a built-in GPU/CPU speed
 const resText = r => `${r.w} × ${r.h}`;
 const resLabel = r => (r.w === 3840 && r.h === 2160 ? '4K' : aspectOf(r.w, r.h) === '16:9' ? `${r.h}p` : resText(r));
 const parseTarget = t => { const m = String(t).trim().match(/^(\d+)\s*(?:fps)?$/i); const n = m ? +m[1] : NaN; return n >= 10 && n <= 1000 ? n : null; };
-const fpsRange = p => (p.capped ? '300+ FPS' : `${Math.round(p.lo)}–${Math.round(p.hi)} FPS`);
+// Anything past 300 reads as "300+", including the top of a range.
+const fps = v => (v >= 300 ? '300+' : String(Math.round(v)));
+const fpsRange = p => (p.capped || p.lo >= 300 ? '300+ FPS' : `${Math.round(p.lo)}–${fps(p.hi)} FPS`);
 const gb = v => (v == null ? '—' : `${v} GB`);
 const hasAny = s => s && (s.gpuText || s.cpuText || s.ramGb != null || s.vramGb != null) ? s : null;
 const card = (titleText, ...body) => h('article', { class: 'ts-card' }, titleText && h('div', { class: 'ts-card-header' }, h('h3', { class: 'ts-card-title' }, titleText)), body);
@@ -109,7 +111,7 @@ export function render(el, ctx) {
     const sug = est.presets?.find(p => p.name === est.suggested);
     const line = !pc.gpu ? `Your GPU isn't in the table yet${gpuName ? ` (${gpuName})` : ''}`
       : sug ? `Suggested: ${sug.name} · ~${fpsRange(sug)}`
-      : est.upscaled ? `With ${est.upscaled.tech} Quality: ~${Math.round(est.upscaled.fps)} FPS at High`
+      : est.upscaled ? `With ${est.upscaled.tech} Quality: ~${fps(est.upscaled.fps)} FPS at High`
       : !est.presets ? 'The requirements name no graphics card the table knows'
       : `No preset reaches ${target} FPS`;
     const verdict = card(null,
