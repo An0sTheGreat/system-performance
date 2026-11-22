@@ -1,7 +1,8 @@
 // Can I Run It? tab: a Gaming | AI toggle over the two estimate views.
 import { h } from '../dom.js';
-import { icon as glyph, segmented, empty } from '../kit.js';
+import { icon as glyph, segmented } from '../kit.js';
 import * as gaming from './canirun-gaming.js';
+import * as ai from './canirun-ai.js';
 
 export const id = 'canirun';
 export const title = 'Can I Run It?';
@@ -9,8 +10,6 @@ export const tile = 'var(--cat-5)';
 export const icon = () => glyph('gauge');
 export const needsInventory = true;
 
-// Until the AI view lands (Task 7).
-const ai = { render: el => el.replaceChildren(empty({ title: 'Coming next' })) };
 const modes = { gaming, ai };
 let shown = null;
 

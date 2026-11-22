@@ -162,7 +162,12 @@ const DEMO_MODELS = {
       num_key_value_heads: 8, head_dim: 128, max_position_embeddings: 40960, torch_dtype: 'bfloat16', vocab_size: 151936 },
   },
 };
-const DEMO_GGUF = { 'google/gemma-3-12b-it': [{ id: 'unsloth/gemma-3-12b-it-GGUF', downloads: 182455 }] };
+DEMO_MODELS['Qwen/Qwen3-8B-GGUF'] = {   // no config.json and no params: the view uses the base model's config
+  info: { task: 'text-generation', downloads: 152210, likes: 187, params: null, ctx: 40960, baseModel: 'Qwen/Qwen3-8B', gated: false },
+  files: [['README.md', 9842], ['Qwen3-8B-Q4_K_M.gguf', 5027783488], ['Qwen3-8B-Q5_K_M.gguf', 5851114304], ['Qwen3-8B-Q8_0.gguf', 8709519168]],
+  config: null,
+};
+const DEMO_GGUF = { 'google/gemma-3-12b-it': [{ id: 'unsloth/gemma-3-12b-it-GGUF', downloads: 182455 }], 'Qwen/Qwen3-8B': [{ id: 'Qwen/Qwen3-8B-GGUF', downloads: 152210 }] };
 const notFound = { ok: false, error: 'http 404' };
 
 export function demoWeb(type, { term = '', appId, id } = {}) {

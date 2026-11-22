@@ -1,6 +1,8 @@
 // AI-model estimate: GGUF quant grouping, memory need, where it runs, tokens/s. Pure; sizes in bytes, bandwidths in GB/s.
 const GiB = 2 ** 30;
-const OVERHEAD = 0.8 * GiB, VRAM_MARGIN = 0.5 * GiB, OS_RESERVE = 4 * GiB, EFF = 0.6, BAND = 0.25;
+const OVERHEAD = 0.8 * GiB;
+export const VRAM_MARGIN = 0.5 * GiB;   // kept free of the model on a dedicated GPU
+const OS_RESERVE = 4 * GiB, EFF = 0.6, BAND = 0.25;
 
 const QUANT_RE = /(?:^|[-_.])((?:UD-)?(?:IQ\d_[A-Z]+|Q\d_[A-Z0-9_]+|BF16|F16|F32|MXFP4))(?=[-_.]|$)/i;
 

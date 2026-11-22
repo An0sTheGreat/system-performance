@@ -125,7 +125,9 @@
 .ts-cir-toggle { display: flex; justify-content: center; & .ts-segmented { inline-size: min(100%, 16rem); } }
 .ts-cir-controls { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); }
 .ts-cir-control { display: flex; align-items: center; gap: var(--space-2); flex: 1 1 10rem; min-inline-size: 0;
-  & .ts-combo-wrap { flex: 1; min-inline-size: 0; } }
+  & .ts-combo-wrap, & > .ts-field { flex: 1; min-inline-size: 0; } }
+.ts-cir-control:has(> .ts-cir-select) { flex-basis: auto; }
+.ts-cir-select > svg { flex: none; inline-size: var(--size-icon); block-size: var(--size-icon); rotate: 90deg; pointer-events: none; }
 .ts-cir-label { font: var(--text-footnote); font-weight: 600; color: var(--color-label-2); white-space: nowrap; }
 .ts-cir-cover { flex: none; inline-size: 120px; block-size: 45px; margin: 0; border-radius: var(--radius-sm); object-fit: cover; background: var(--color-fill-2); }
 .ts-cir-cover--none { display: grid; place-items: center; color: var(--color-label-3); & svg { inline-size: var(--size-icon); block-size: var(--size-icon); } }
@@ -134,7 +136,8 @@
 .ts-cir-muted { color: var(--color-label-2); font-weight: 400; }
 .ts-cir-verdict { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
 .ts-cir-verdict-line { margin: 0; font: var(--text-title-2); font-weight: 700;
-  &[data-verdict="great"] { color: var(--color-positive); } &[data-verdict="below"] { color: var(--color-negative); } }
+  &:is([data-verdict="great"], [data-verdict="vram"]) { color: var(--color-positive); }
+  &:is([data-verdict="below"], [data-verdict="none"]) { color: var(--color-negative); } }
 .ts-cir-checks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .ts-cir-suggest { margin: var(--space-2) 0 0; font: var(--text-callout); color: var(--color-label-2); }
 .ts-cir-star { margin-inline-start: var(--space-2); }
@@ -143,4 +146,9 @@
 .ts-cir-req { table-layout: fixed; & td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
   & th[scope="row"] { inline-size: 3.5rem; font-weight: 600; color: var(--color-label-2); }
   & thead th { position: static; } }
+/* AI memory bar: the stackbar plus a line at usable VRAM (inline start set by the view). */
+.ts-cir-bar { position: relative; margin-block: var(--space-3) var(--space-2); }
+.ts-cir-vram { position: absolute; inset-block: calc(-1 * var(--space-1)); inline-size: 2px; margin-inline-start: -1px; border-radius: 1px; background: var(--color-label); }
+.ts-cir-vram-dot { --dot: var(--color-label); border-radius: 1px; inline-size: 2px; }
+.ts-cir-quant[aria-current="true"] .ts-row-title { color: var(--color-tint); font-weight: 600; }
 .ts-cir-note { margin: 0; font: var(--text-footnote); color: var(--color-label-2); }
