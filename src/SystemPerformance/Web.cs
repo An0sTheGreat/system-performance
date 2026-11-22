@@ -20,7 +20,7 @@ static partial class Web
 
     static HttpClient NewClient()
     {
-        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        var http = new HttpClient(new SocketsHttpHandler { UseCookies = false }) { Timeout = TimeSpan.FromSeconds(10) };
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("SystemPerformance", typeof(Web).Assembly.GetName().Version!.ToString()));
         return http;
     }

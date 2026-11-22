@@ -75,3 +75,34 @@ test('minimum checks use the weakest listed part, not the mean', () => {
   assert.equal(weak.verdict, 'below');
   assert.equal(weak.checks.gpu, 'fail');
 });
+
+const R1080 = { w: 1920, h: 1080 };
+test('verdict and suggested preset use the same rule', () => {
+  const rec = { gpus: [g(40)], cpus: [], ramGb: 8, vramGb: null };
+  for (const k of [0.3, 0.5, 0.8, 1, 1.05, 1.1, 1.3, 1.6, 2, 3]) {
+    const r = estimateGame({ min: null, rec, pc: { gpu: g(40 * k), cpu: null, ramGb: 16, vramGb: 8 }, res: R1080, target: 60 });
+    if (r.verdict === 'well' || r.verdict === 'great') assert.notEqual(r.suggested, null, `k=${k}`);
+    if (r.verdict === 'great') assert.ok(['High', 'Ultra'].includes(r.suggested), `k=${k}`);
+    if (r.verdict === 'well') assert.ok(['Low', 'Medium'].includes(r.suggested), `k=${k}`);
+  }
+  const r = estimateGame({ min: null, rec, pc: { gpu: g(42), cpu: null, ramGb: 16, vramGb: 8 }, res: R1080, target: 60 });
+  assert.equal(r.verdict, 'well'); assert.equal(r.suggested, 'Medium');   // High's midpoint reaches 60, its low end does not
+});
+test('VRAM-limited presets do not count toward great', () => {
+  const r = estimateGame({ min: null, rec: { gpus: [g(10)], cpus: [], ramGb: 8, vramGb: 12 }, pc: { gpu: g(100, 8), cpu: null, ramGb: 32, vramGb: 8 }, res: R1080, target: 60 });
+  assert.ok(r.presets.filter(p => p.name === 'High' || p.name === 'Ultra').every(p => p.vramLimited && p.lo >= 60));
+  assert.equal(r.verdict, 'well'); assert.equal(r.suggested, 'Medium');
+});
+test('upscaler estimate respects the CPU cap and is null when it gains nothing', () => {
+  const rec = { gpus: [g(40)], cpus: [c(50)], ramGb: 8, vramGb: null }, pc = cs => ({ gpu: g(20), cpu: c(cs), ramGb: 16, vramGb: 8 }), res = { w: 3840, h: 2160 };
+  const free = estimateGame({ min: null, rec, pc: pc(100), res, target: 60 });
+  assert.ok(free.upscaled.fps > free.presets.find(p => p.name === 'High').fps);
+  const capped = estimateGame({ min: null, rec, pc: pc(10), res, target: 60 });   // CPU cap 60 × 10/50 × 1.5 = 18
+  assert.ok(capped.upscaled.fps <= 18.001 && capped.upscaled.fps > capped.presets.find(p => p.name === 'High').fps);
+  const stuck = estimateGame({ min: null, rec, pc: { gpu: g(40), cpu: c(10), ramGb: 16, vramGb: 8 }, res: R1080, target: 60 });
+  assert.equal(stuck.suggested, null); assert.equal(stuck.upscaled, null);
+});
+test('no matched requirement GPU gives no presets and an unknown verdict', () => {
+  const r = estimateGame({ min: null, rec: { gpus: [], cpus: [c(50)], ramGb: 8, vramGb: null }, pc: { gpu: g(40), cpu: c(50), ramGb: 16, vramGb: 8 }, res: R1080, target: 60 });
+  assert.equal(r.presets, null); assert.equal(r.suggested, null); assert.equal(r.upscaled, null); assert.equal(r.verdict, 'unknown');
+});

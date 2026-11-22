@@ -124,7 +124,7 @@ export function render(el, ctx) {
 
   // Verdict, all quants and footnote; runs on every control change without refetching.
   function paintVerdict() {
-    if (!model?.quants.length || loading || modelError) return;
+    if (!ui || !model?.quants.length || loading || modelError) return;
     const rows = estimates();
     const r = rows.find(q => q.tag === quantTag);
     ui.quantSelect.value = quantTag;

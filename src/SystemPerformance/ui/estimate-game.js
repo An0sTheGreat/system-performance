@@ -104,8 +104,8 @@ export function estimateGame({ min, rec, pc, res, target }) {
   // Upscaling renders at UPSCALE × the resolution; it can't lift a CPU limit, so no line when it gains nothing.
   const up = fpsOf(high * (1 / UPSCALE ** 2) ** RES_EXP), highFps = presets.find(p => p.name === 'High').fps;
   const upscaled = !suggested && up > highFps ? { tech: pc.gpu.up, fps: up } : null;
-  // VRAM-limited presets don't count toward "great": High/Ultra are capped by VRAM, as in the spec.
-  const reaches = names => usable.some(p => names.includes(p.name) && p.fps >= target);
+  // Same rule as `suggested` (the low end of the band reaches the target); VRAM-limited presets count toward neither.
+  const reaches = names => usable.some(p => names.includes(p.name) && p.lo >= target);
   const verdict = below ? 'below' : reaches(['High', 'Ultra']) ? 'great' : reaches(['Low', 'Medium']) ? 'well' : 'playable';
   return { verdict, checks, presets, suggested, upscaled };
 }
