@@ -9,7 +9,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>SystemPerformance</RootNamespace>
     <AssemblyName>SystemPerformance</AssemblyName>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
