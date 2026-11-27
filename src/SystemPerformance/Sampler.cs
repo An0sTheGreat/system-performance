@@ -261,19 +261,24 @@ sealed class Sampler : IDisposable
             if (perPid != null && e.Name.StartsWith("pid_", StringComparison.Ordinal) && end > 4 && int.TryParse(e.Name.AsSpan(4, end - 4), out int pid))
                 perPid[(pid, type)] = perPid.GetValueOrDefault((pid, type)) + e.Value;
         }
+        var dedicated = pdh.Array(gpuDedicated); var shared = pdh.Array(gpuShared);
         if (perPid != null)
         {
             gpuByPid.Clear();   // a process's GPU % is its busiest engine type, as in Task Manager
             foreach (var (k, v) in perPid) gpuByPid[k.Pid] = Math.Max(gpuByPid.GetValueOrDefault(k.Pid), v);
             vramByPid.Clear();  // "pid_1234_luid_..._phys_0": dedicated memory per process, all GPUs together
+            // Windows overstates some processes (dwm read 26 GB on a GPU using 2.3 GB), so no process gets more
+            // than its adapter ("luid_..._phys_0") has in use.
+            var adapterUsed = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            foreach (var d in dedicated) adapterUsed[d.Name] = d.Value;
             foreach (var m in pdh.Array(gpuProcessMemory))
             {
                 int end = m.Name.IndexOf('_', 4);
-                if (m.Name.StartsWith("pid_", StringComparison.Ordinal) && end > 4 && int.TryParse(m.Name.AsSpan(4, end - 4), out int pid))
-                    vramByPid[pid] = vramByPid.GetValueOrDefault(pid) + (long)m.Value;
+                if (!m.Name.StartsWith("pid_", StringComparison.Ordinal) || end <= 4 || !int.TryParse(m.Name.AsSpan(4, end - 4), out int pid)) continue;
+                double v = adapterUsed.TryGetValue(m.Name[(end + 1)..], out var cap) ? Math.Min(m.Value, cap) : m.Value;
+                vramByPid[pid] = vramByPid.GetValueOrDefault(pid) + (long)v;
             }
         }
-        var dedicated = pdh.Array(gpuDedicated); var shared = pdh.Array(gpuShared);
         long Mem(List<(string Name, double Value)> rows, string luid) => (long)rows.Where(m => m.Name.Contains(luid, StringComparison.OrdinalIgnoreCase)).Sum(m => m.Value);
         var result = gpus.Select(g =>
         {
